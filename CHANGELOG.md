@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/aimuzov-projects/wodlog/compare/v1.8.0...v1.9.0) (2026-10-15)
+
+
+### Features
+
+* timer starts at once and has no bottom buttons ([#29](https://github.com/aimuzov-projects/wodlog/issues/29)) ([002ddd5](https://github.com/aimuzov-projects/wodlog/commit/002ddd5f7fd89faaacfb8e83e31b4a8de5cf1473))
+
 ## [1.8.0](https://github.com/aimuzov-projects/wodlog/compare/v1.7.0...v1.8.0) (2026-10-15)
 
 
