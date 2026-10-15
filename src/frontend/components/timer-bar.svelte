@@ -39,8 +39,9 @@
 
 		position: fixed;
 		z-index: 11;
-		right: var(--gutter);
-		bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 10px);
+		/* В одном ряду с кнопкой меню, слева от неё. */
+		right: calc(var(--gutter) + var(--fab-size) + 10px);
+		bottom: calc(var(--safe-bottom) + 20px);
 		left: var(--gutter);
 		display: flex;
 		gap: 10px;

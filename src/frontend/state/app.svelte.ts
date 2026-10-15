@@ -1,24 +1,26 @@
 /**
  * Состояние приложения: кто вошёл, в каком зале и какой экран открыт.
  *
- * Навигация без роутера: пять вкладок и стек экранов поверх них. Стек нужен, чтобы
- * системная «Назад» Telegram закрывала ровно последний открытый экран.
+ * Навигация без роутера: главный экран -- тренировка дня, всё остальное открывается стеком
+ * поверх него из меню. Стек нужен, чтобы системная «Назад» Telegram закрывала ровно последний
+ * открытый экран.
  */
 
 import { api, getToken, handleUnauthorized, setToken } from '#frontend/lib/api.ts'
 import { localDate } from '#frontend/lib/format.ts'
-import { insideTelegram, inviteFromLaunch, setBackButton, webApp } from '#frontend/lib/telegram.ts'
+import { confirmAction, insideTelegram, inviteFromLaunch, setBackButton, webApp } from '#frontend/lib/telegram.ts'
 import { timer } from '#frontend/state/timer.svelte.ts'
-import type { TimerResult } from '#shared/timer.ts'
-import type { Gym, Me, Part, Workout, WorkoutDraft } from '#shared/types.ts'
-
-export type Tab = 'today' | 'timer' | 'rating' | 'profile'
+import { configForPart, type TimerResult } from '#shared/timer.ts'
+import { PART_KIND_LABELS, type Gym, type Me, type Part, type Workout, type WorkoutDraft } from '#shared/types.ts'
 
 export type Screen =
 	| { name: 'editor'; date: string; draft: WorkoutDraft }
 	| { name: 'part'; part: Part; date: string; prefill?: TimerResult }
 	/** Сам таймер живёт в `state/timer.svelte.ts`, экран только показывает его. */
 	| { name: 'timer' }
+	| { name: 'timer-setup' }
+	| { name: 'rating' }
+	| { name: 'profile' }
 	| { name: 'gyms' }
 
 type Login = { token: string; me: Me; gyms: Gym[]; startParam?: string | null }
@@ -32,9 +34,8 @@ class AppState {
 	me = $state<Me | null>(null)
 	gyms = $state<Gym[]>([])
 	gymId = $state<number | null>(null)
-	tab = $state<Tab>('today')
 	stack = $state<Screen[]>([])
-	/** Выбранный день на вкладке «Тренировка». */
+	/** Выбранный день на главном экране. */
 	date = $state(localDate())
 	/** Тренировки по ключу `зал:дата`, `null` -- на этот день тренировки нет. */
 	workouts = $state<Record<string, Workout | null>>({})
@@ -207,10 +208,29 @@ class AppState {
 		this.#syncBack()
 	}
 
-	switchTab(tab: Tab) {
-		this.tab = tab
+	/** Пункт меню: открывается поверх главного экрана, а не поверх того, что было открыто до. */
+	go(screen: Screen) {
+		this.stack = [screen]
+		this.#syncBack()
+	}
+
+	home() {
 		this.stack = []
 		this.#syncBack()
+	}
+
+	/** Таймер комплекса: если он уже идёт -- просто вернуться к нему. */
+	async startTimer(part: Part, date: string) {
+		const own = timer.session?.source?.part.id === part.id && !timer.finished
+
+		if (!own) {
+			if (timer.session && !timer.finished && !(await confirmAction('Другой таймер ещё идёт. Запустить новый?')))
+				return
+
+			timer.start(configForPart(part), part.title || PART_KIND_LABELS[part.kind], { part, date })
+		}
+
+		this.open({ name: 'timer' })
 	}
 
 	#syncBack() {

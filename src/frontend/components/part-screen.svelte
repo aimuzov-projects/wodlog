@@ -5,11 +5,10 @@
 	import ResultForm from '#frontend/components/result-form.svelte'
 	import { api } from '#frontend/lib/api.ts'
 	import { humanDate, resultLine } from '#frontend/lib/format.ts'
-	import { confirmAction } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
 	import { timer } from '#frontend/state/timer.svelte.ts'
-	import { configForPart, type TimerResult } from '#shared/timer.ts'
-	import { PART_KIND_LABELS, type LeaderboardRow, type Part, type Result } from '#shared/types.ts'
+	import type { TimerResult } from '#shared/timer.ts'
+	import type { LeaderboardRow, Part, Result } from '#shared/types.ts'
 
 	let { part, date, prefill }: { part: Part; date: string; prefill?: TimerResult } = $props()
 
@@ -35,17 +34,6 @@
 		editing = false
 	}
 
-	async function startTimer() {
-		if (!ownTimer) {
-			if (timer.session && !timer.finished && !(await confirmAction('Другой таймер ещё идёт. Запустить новый?')))
-				return
-
-			timer.start(configForPart(part), part.title || PART_KIND_LABELS[part.kind], { part, date })
-		}
-
-		app.open({ name: 'timer' })
-	}
-
 	const medal = (place: number) => (place <= 3 ? ['gold', 'silver', 'bronze'][place - 1] : null)
 </script>
 
@@ -55,7 +43,7 @@
 	<PartCard {part} />
 
 	{#if part.kind !== 'strength'}
-		<button class="btn btn--wide" onclick={startTimer}>
+		<button class="btn btn--wide" onclick={() => app.startTimer(part, date)}>
 			<Icon name="timer" />
 			{ownTimer ? 'Вернуться к таймеру' : 'Запустить таймер'}
 		</button>

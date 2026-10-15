@@ -321,7 +321,7 @@
 
 		&__actions {
 			position: sticky;
-			bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 8px);
+			bottom: calc(var(--safe-bottom) + 8px);
 			display: grid;
 			grid-template-columns: 1fr 2fr;
 			gap: 10px;

@@ -1,9 +1,11 @@
 <script lang="ts">
 	import Icon from '#frontend/components/icon.svelte'
 	import PartCard from '#frontend/components/part-card.svelte'
-	import { humanDate, localDate, shiftDate } from '#frontend/lib/format.ts'
+	import { humanDate, localDate, shiftDate, shortDate } from '#frontend/lib/format.ts'
 	import { haptic } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
+	import { timer } from '#frontend/state/timer.svelte.ts'
+	import type { Part } from '#shared/types.ts'
 
 	let loading = $state(false)
 
@@ -26,6 +28,10 @@
 		app.date = shiftDate(app.date, days)
 	}
 
+	const openPart = (part: Part) => app.open({ name: 'part', part, date: app.date })
+
+	const timerRunning = (part: Part) => timer.session?.source?.part.id === part.id && !timer.finished
+
 	function edit() {
 		app.open({
 			name: 'editor',
@@ -37,35 +43,24 @@
 
 <section class="today">
 	<header class="today__header">
-		<button class="today__gym" onclick={() => app.open({ name: 'gyms' })}>
-			{app.gym?.name}
-			<Icon name="down" size={18} />
+		<label class="today__date">
+			<h1 class="today__title">{humanDate(app.date, today)}</h1>
+			{#if app.date === today}<span class="muted">{shortDate(app.date)}</span>{/if}
+			<input
+				class="today__date-input"
+				type="date"
+				value={app.date}
+				max={today}
+				aria-label="Выбрать дату"
+				onchange={(event) => event.currentTarget.value && (app.date = event.currentTarget.value)}
+			/>
+		</label>
+		<button class="btn btn--small" aria-label="Предыдущий день" onclick={() => go(-1)}>
+			<Icon name="left" size={20} />
 		</button>
-
-		<div class="today__dates">
-			<button class="btn btn--small" aria-label="Предыдущий день" onclick={() => go(-1)}>
-				<Icon name="left" size={20} />
-			</button>
-			<label class="today__date">
-				<span>{humanDate(app.date, today)}</span>
-				<input
-					class="today__date-input"
-					type="date"
-					value={app.date}
-					max={today}
-					aria-label="Выбрать дату"
-					onchange={(event) => event.currentTarget.value && (app.date = event.currentTarget.value)}
-				/>
-			</label>
-			<button
-				class="btn btn--small"
-				aria-label="Следующий день"
-				disabled={app.date >= today}
-				onclick={() => go(1)}
-			>
-				<Icon name="right" size={20} />
-			</button>
-		</div>
+		<button class="btn btn--small" aria-label="Следующий день" disabled={app.date >= today} onclick={() => go(1)}>
+			<Icon name="right" size={20} />
+		</button>
 	</header>
 
 	{#if workout === undefined || (loading && !workout)}
@@ -86,7 +81,16 @@
 
 		{#each workout.parts as part, i (part.id)}
 			<h2 class="section-title">Комплекс {i + 1}</h2>
-			<PartCard {part} onclick={() => app.open({ name: 'part', part, date: app.date })} />
+			<PartCard {part} onclick={() => openPart(part)} />
+			<div class="today__actions">
+				{#if part.kind !== 'strength'}
+					<button class="btn btn--primary" onclick={() => app.startTimer(part, app.date)}>
+						<Icon name="play" size={20} />
+						{timerRunning(part) ? 'К таймеру' : 'Старт'}
+					</button>
+				{/if}
+				<button class="btn" onclick={() => openPart(part)}>Результат</button>
+			</div>
 		{/each}
 
 		<div class="today__tools">
@@ -102,38 +106,34 @@
 <style>
 	.today {
 		&__header {
-			display: grid;
-			gap: 12px;
-		}
-
-		&__gym {
-			display: flex;
-			gap: 4px;
-			align-items: center;
-			padding: 0;
-			border: 0;
-			font-family: var(--font-display);
-			font-size: 1.6rem;
-			font-weight: 800;
-			text-align: left;
-			letter-spacing: -0.02em;
-			background: none;
-		}
-
-		&__dates {
 			display: flex;
 			gap: 8px;
 			align-items: center;
 		}
 
+		/* Поверх даты невидимый input: тап по заголовку открывает системный выбор дня. */
 		&__date {
 			position: relative;
+			display: flex;
 			flex: 1;
-			padding: 8px;
-			border-radius: var(--radius-small);
-			font-weight: 700;
-			text-align: center;
-			background: var(--surface);
+			gap: 10px;
+			align-items: baseline;
+			min-width: 0;
+		}
+
+		&__title {
+			font-family: var(--font-display);
+			font-size: 2rem;
+			font-weight: 800;
+			letter-spacing: -0.02em;
+		}
+
+		&__actions {
+			display: grid;
+			grid-auto-columns: 1fr;
+			grid-auto-flow: column;
+			gap: 8px;
+			margin-top: 8px;
 		}
 
 		&__date-input {
