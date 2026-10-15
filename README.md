@@ -41,7 +41,6 @@ The app is in Russian, so the names below are translated.
 - **Public and private profiles.** A private one keeps stats for its owner only and stays out of the tables.
 - **Invite-only gyms.** The link `t.me/wodlogrobot?startapp=gym_<code>` adds a person to the gym right away.
 - **Timer.** For Time, AMRAP, EMOM, Tabata and intervals with sound, vibration and the screen kept on. Works without signing in and offline. A part starts it with the numbers from the board.
-- **Injuries.** A reference of common CrossFit injuries: what they are, where they come from and how to train around them.
 - **Profile.** Result history and personal records per movement.
 
 ## How it is built
