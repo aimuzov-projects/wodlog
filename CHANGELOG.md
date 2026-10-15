@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/aimuzov-projects/wodlog/compare/v1.2.0...v1.3.0) (2026-10-15)
+
+
+### Features
+
+* keep the timer running and fill the result from it ([#12](https://github.com/aimuzov-projects/wodlog/issues/12)) ([4b4f346](https://github.com/aimuzov-projects/wodlog/commit/4b4f346a4a2e21efb1d3753ac208a4093ff2765d))
+* serve telegram avatars through the api ([#13](https://github.com/aimuzov-projects/wodlog/issues/13)) ([0acf233](https://github.com/aimuzov-projects/wodlog/commit/0acf233b940458fba1eb8d93be282b56a3a03c3d))
+
+
+### Bug Fixes
+
+* stop double tap from zooming the page ([#11](https://github.com/aimuzov-projects/wodlog/issues/11)) ([275668b](https://github.com/aimuzov-projects/wodlog/commit/275668bcd928070f9676b9e8a12321e594d2ac8c))
+
 ## [1.2.0](https://github.com/aimuzov-projects/wodlog/compare/v1.1.2...v1.2.0) (2026-10-15)
 
 
