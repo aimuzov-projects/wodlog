@@ -5,22 +5,27 @@
 	import ResultForm from '#frontend/components/result-form.svelte'
 	import { api } from '#frontend/lib/api.ts'
 	import { humanDate, resultLine } from '#frontend/lib/format.ts'
+	import { confirmAction } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
-	import { configForPart } from '#shared/timer.ts'
+	import { timer } from '#frontend/state/timer.svelte.ts'
+	import { configForPart, type TimerResult } from '#shared/timer.ts'
 	import { PART_KIND_LABELS, type LeaderboardRow, type Part, type Result } from '#shared/types.ts'
 
-	let { part, date }: { part: Part; date: string } = $props()
+	let { part, date, prefill }: { part: Part; date: string; prefill?: TimerResult } = $props()
 
 	type Board = { rows: LeaderboardRow[]; mine: Result | null }
 
 	let board = $state<Board | null>(null)
 	let editing = $state(false)
 
+	// Таймер этого комплекса уже идёт: кнопка возвращает к нему, а не запускает новый.
+	const ownTimer = $derived(timer.session?.source?.part.id === part.id && !timer.finished)
+
 	$effect(() => {
 		api<Board>('GET', `/api/parts/${part.id}/results`)
 			.then((b) => {
 				board = b
-				editing = !b.mine
+				editing = !b.mine || Boolean(prefill)
 			})
 			.catch((error) => app.notify(error.message, true))
 	})
@@ -30,8 +35,15 @@
 		editing = false
 	}
 
-	function startTimer() {
-		app.open({ name: 'timer', config: configForPart(part), title: part.title || PART_KIND_LABELS[part.kind] })
+	async function startTimer() {
+		if (!ownTimer) {
+			if (timer.session && !timer.finished && !(await confirmAction('Другой таймер ещё идёт. Запустить новый?')))
+				return
+
+			timer.start(configForPart(part), part.title || PART_KIND_LABELS[part.kind], { part, date })
+		}
+
+		app.open({ name: 'timer' })
 	}
 
 	const medal = (place: number) => (place <= 3 ? ['gold', 'silver', 'bronze'][place - 1] : null)
@@ -43,7 +55,10 @@
 	<PartCard {part} />
 
 	{#if part.kind !== 'strength'}
-		<button class="btn btn--wide" onclick={startTimer}><Icon name="timer" /> Запустить таймер</button>
+		<button class="btn btn--wide" onclick={startTimer}>
+			<Icon name="timer" />
+			{ownTimer ? 'Вернуться к таймеру' : 'Запустить таймер'}
+		</button>
 	{/if}
 
 	<h2 class="section-title">Мой результат</h2>
@@ -53,6 +68,7 @@
 		<ResultForm
 			{part}
 			initial={board.mine}
+			{prefill}
 			onsaved={saved}
 			oncancel={board.mine ? () => (editing = false) : undefined}
 		/>
@@ -67,7 +83,7 @@
 		</button>
 	{/if}
 
-	<h2 class="section-title">Зал</h2>
+	<h2 class="section-title">Результаты</h2>
 	{#if board && board.rows.length === 0}
 		<p class="muted">Пока никто не внёс результат. Будьте первым!</p>
 	{:else if board}

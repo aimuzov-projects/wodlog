@@ -28,6 +28,25 @@ test('Tabata timer runs through prep, work and rest', async ({ page }) => {
 	await page.clock.runFor(5_000)
 	await expect(clock).toHaveText(paused!)
 
-	await page.getByRole('button', { name: 'Закрыть таймер' }).click()
+	await page.getByRole('button', { name: 'Пауза' }).waitFor({ state: 'detached' })
+	await page.getByRole('button', { name: 'Дальше' }).click()
+
+	// Свёрнутый таймер продолжает идти, а плашка над вкладками возвращает к нему.
+	await page.getByRole('button', { name: 'Свернуть таймер' }).click()
 	await expect(page.getByRole('heading', { name: 'Таймер' })).toBeVisible()
+
+	const bar = page.locator('.timer-bar')
+
+	await expect(bar).toContainText('Tabata')
+
+	// И даже перезагрузку переживает: время считается по часам и лежит в localStorage.
+	await page.reload()
+	await page.getByRole('button', { name: 'Просто открыть таймер' }).click()
+	// 10 с подготовки + (20 работы + 10 отдыха) × 2 = 70 с, после паузы набегает до 70,5 -- третий раунд.
+	await page.clock.runFor(40_000)
+	await bar.click()
+	await expect(page.locator('.timer-run__round')).toHaveText('Раунд 3 / 8')
+
+	await page.getByRole('button', { name: 'Завершить' }).click()
+	await expect(bar).toHaveCount(0)
 })

@@ -1,7 +1,19 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { configForPart, formatClock, Stopwatch, TABATA, timerState, totalMs } from '#shared/timer.ts'
+import { configForPart, formatClock, resultFromTimer, Stopwatch, TABATA, timerState, totalMs } from '#shared/timer.ts'
+
+test('turns a finished timer into a result', () => {
+	const amrap = { mode: 'amrap', durationSec: 600 } as const
+	const forTime = { mode: 'for_time', capSec: 300 } as const
+	const emom = { mode: 'emom', intervalSec: 60, rounds: 4 } as const
+
+	assert.deepEqual(resultFromTimer(amrap, 10_000 + 600_000, 7), { rounds: 7, timeSec: null, capped: false })
+	assert.deepEqual(resultFromTimer(forTime, 10_000 + 252_400, 3), { rounds: null, timeSec: 252, capped: false })
+	assert.deepEqual(resultFromTimer(forTime, 10_000 + 300_000, 3), { rounds: 3, timeSec: null, capped: true })
+	assert.deepEqual(resultFromTimer(emom, 10_000 + 240_000, 0), { rounds: 4, timeSec: null, capped: false })
+	assert.deepEqual(resultFromTimer(emom, 10_000 + 150_000, 0), { rounds: 2, timeSec: null, capped: false })
+})
 
 test('starts with a 10 second prep countdown', () => {
 	const state = timerState({ mode: 'amrap', durationSec: 600 }, 3_000)

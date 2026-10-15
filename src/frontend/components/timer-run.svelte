@@ -1,109 +1,47 @@
 <script lang="ts">
-	import { onDestroy, onMount, untrack } from 'svelte'
-
 	import Icon from '#frontend/components/icon.svelte'
-	import { beep, keepAwake, unlockAudio } from '#frontend/lib/sound.ts'
-	import { haptic } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
-	import { formatClock, Stopwatch, timerState, type TimerConfig, type TimerState } from '#shared/timer.ts'
-
-	let { config, title }: { config: TimerConfig; title: string } = $props()
+	import { timer } from '#frontend/state/timer.svelte.ts'
+	import { formatClock } from '#shared/timer.ts'
 
 	const PHASE_LABELS = { prep: 'Приготовиться', work: 'Работа', rest: 'Отдых', done: 'Готово' }
 
-	const watch = new Stopwatch()
+	const session = $derived(timer.session)
+	const view = $derived(timer.view)
 
-	let view = $state<TimerState>(untrack(() => timerState(config, 0)))
-	let running = $state(false)
-	// Раунды, которые спортсмен отмечает сам: в AMRAP и For Time таймер их не знает.
-	let laps = $state(0)
-	let frame = 0
-	let lastSecond = -1
-	let lastPhase = ''
+	// Таймер из комплекса по окончании сам открывает форму результата. Пауза перед этим -- чтобы
+	// успеть увидеть «Готово» и услышать финальный сигнал.
+	$effect(() => {
+		if (!timer.finished || !session?.source) return
 
-	function tick() {
-		const next = timerState(config, watch.elapsed(performance.now()))
-		const second = Math.ceil(next.phaseLeftMs / 1000)
+		const id = setTimeout(() => app.showTimerResult(), 1500)
 
-		// Сигналы на переходах: 3-2-1 перед концом отрезка и длинный на смену.
-		if (`${next.phase}:${next.round}` !== lastPhase && lastPhase) {
-			beep(next.phase === 'done' ? 'end' : 'go')
-			haptic(next.phase === 'done' ? 'success' : 'heavy')
-		} else if (second !== lastSecond && second <= 3 && second > 0 && next.phaseLeftMs !== Infinity) {
-			beep('tick')
-		}
-
-		lastSecond = second
-		lastPhase = `${next.phase}:${next.round}`
-		view = next
-
-		if (next.phase === 'done') {
-			running = false
-			watch.pause(performance.now())
-			void keepAwake(false)
-
-			return
-		}
-
-		frame = requestAnimationFrame(tick)
-	}
-
-	function toggle() {
-		unlockAudio()
-		haptic('medium')
-
-		if (running) {
-			watch.pause(performance.now())
-			cancelAnimationFrame(frame)
-			running = false
-			void keepAwake(false)
-		} else {
-			if (view.phase === 'done') reset()
-
-			watch.start(performance.now())
-			running = true
-			void keepAwake(true)
-			frame = requestAnimationFrame(tick)
-		}
-	}
-
-	function reset() {
-		cancelAnimationFrame(frame)
-		watch.reset()
-		running = false
-		laps = 0
-		lastSecond = -1
-		lastPhase = ''
-		view = timerState(config, 0)
-		void keepAwake(false)
-	}
-
-	function lap() {
-		if (view.phase !== 'work') return
-
-		haptic('light')
-		laps += 1
-	}
-
-	// Вернулись на вкладку -- экран снова не должен гаснуть, Wake Lock снимается при уходе.
-	function onVisibility() {
-		if (document.visibilityState === 'visible' && running) void keepAwake(true)
-	}
-
-	onMount(() => document.addEventListener('visibilitychange', onVisibility))
-
-	onDestroy(() => {
-		cancelAnimationFrame(frame)
-		void keepAwake(false)
-		document.removeEventListener('visibilitychange', onVisibility)
+		return () => clearTimeout(id)
 	})
 
-	const countsDown = $derived(config.mode !== 'for_time' || view.phase === 'prep')
+	/** Закрыть экран: таймер при этом продолжает идти. */
+	function hide() {
+		app.back()
+	}
+
+	/** Завершить совсем: из комплекса -- к записи результата, иначе просто закрыть. */
+	function end() {
+		if (session?.source && (timer.elapsedMs > 0 || timer.finished)) app.showTimerResult()
+		else {
+			timer.close()
+			app.back()
+		}
+	}
+
+	const countsDown = $derived(session?.config.mode !== 'for_time' || view?.phase === 'prep')
 	const progress = $derived.by(() => {
+		if (!view || !session) return 0
+
 		if (view.phase === 'done') return 1
 
 		if (view.phaseLeftMs === Infinity) return 0
 
+		const config = session.config
 		const length =
 			view.phase === 'prep'
 				? 10_000
@@ -119,61 +57,51 @@
 	})
 </script>
 
-<section class="timer-run timer-run--{view.phase}" style:--progress={progress}>
-	<header class="timer-run__header">
-		<button class="btn btn--small timer-run__close" aria-label="Закрыть таймер" onclick={() => app.back()}>
-			<Icon name="close" size={20} />
+{#if session && view}
+	<section class="timer-run timer-run--{view.phase}" style:--progress={progress}>
+		<header class="timer-run__header">
+			<button class="btn btn--small timer-run__close" aria-label="Свернуть таймер" onclick={hide}>
+				<Icon name="down" size={20} />
+			</button>
+			<span class="timer-run__title">{session.title}</span>
+			<button class="btn btn--small timer-run__end" onclick={end}>Завершить</button>
+		</header>
+
+		<button class="timer-run__face" onclick={() => timer.lap()} aria-label="Отметить раунд">
+			<span class="timer-run__phase">{PHASE_LABELS[view.phase]}</span>
+			<span class="timer-run__clock">{formatClock(view.displayMs, countsDown)}</span>
+			{#if view.rounds}
+				<span class="timer-run__round">Раунд {Math.max(1, view.round)} / {view.rounds}</span>
+			{:else if view.phase !== 'prep'}
+				<span class="timer-run__round">Раундов: {session.laps}</span>
+				{#if view.phase === 'work'}<span class="timer-run__tap">тап по экрану — +1 раунд</span>{/if}
+			{/if}
+			{#if session.config.mode === 'for_time' && session.config.capSec}
+				<span class="timer-run__cap">кап {formatClock(session.config.capSec * 1000)}</span>
+			{/if}
 		</button>
-		<span class="timer-run__title">{title}</span>
-	</header>
 
-	<button class="timer-run__face" onclick={lap} aria-label="Отметить раунд">
-		<span class="timer-run__phase">{PHASE_LABELS[view.phase]}</span>
-		<span class="timer-run__clock">{formatClock(view.displayMs, countsDown)}</span>
-		{#if view.rounds}
-			<span class="timer-run__round">Раунд {Math.max(1, view.round)} / {view.rounds}</span>
-		{:else if view.phase !== 'prep'}
-			<span class="timer-run__round">Раундов: {laps}</span>
-			{#if view.phase === 'work'}<span class="timer-run__tap">тап по экрану — +1 раунд</span>{/if}
-		{/if}
-		{#if config.mode === 'for_time' && config.capSec}
-			<span class="timer-run__cap">кап {formatClock(config.capSec * 1000)}</span>
-		{/if}
-	</button>
+		<div class="timer-run__progress"></div>
 
-	<div class="timer-run__progress"></div>
-
-	<footer class="timer-run__controls">
-		<button class="btn timer-run__button" aria-label="Сбросить" onclick={reset}
-			><Icon name="reset" size={28} /></button
-		>
-		<button class="btn btn--primary timer-run__button timer-run__button--main" onclick={toggle}>
-			<Icon name={running ? 'pause' : 'play'} size={32} />
-			{running
-				? 'Пауза'
-				: view.phase === 'done'
-					? 'Заново'
-					: watch.running || view.workElapsedMs
-						? 'Дальше'
-						: 'Старт'}
-		</button>
-		{#if config.mode === 'for_time'}
-			<button
-				class="btn timer-run__button"
-				aria-label="Финиш"
-				disabled={view.phase !== 'work'}
-				onclick={() => {
-					watch.pause(performance.now())
-					cancelAnimationFrame(frame)
-					running = false
-					haptic('success')
-					beep('end')
-					void keepAwake(false)
-				}}>Финиш</button
+		<footer class="timer-run__controls">
+			<button class="btn timer-run__button" aria-label="Сбросить" onclick={() => timer.reset()}
+				><Icon name="reset" size={28} /></button
 			>
-		{/if}
-	</footer>
-</section>
+			<button class="btn btn--primary timer-run__button timer-run__button--main" onclick={() => timer.toggle()}>
+				<Icon name={timer.running ? 'pause' : 'play'} size={32} />
+				{timer.running ? 'Пауза' : timer.finished ? 'Заново' : timer.elapsedMs ? 'Дальше' : 'Старт'}
+			</button>
+			{#if session.config.mode === 'for_time'}
+				<button
+					class="btn timer-run__button"
+					aria-label="Финиш"
+					disabled={view.phase !== 'work'}
+					onclick={() => timer.finish()}>Финиш</button
+				>
+			{/if}
+		</footer>
+	</section>
+{/if}
 
 <style>
 	.timer-run {
@@ -200,8 +128,14 @@
 		}
 
 		&__title {
+			flex: 1;
 			font-weight: 700;
 			opacity: 0.8;
+		}
+
+		&__end {
+			color: #ffffff;
+			background: rgb(255 255 255 / 12%);
 		}
 
 		&__face {

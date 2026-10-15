@@ -10,6 +10,7 @@
 	import Profile from '#frontend/components/profile.svelte'
 	import Rating from '#frontend/components/rating.svelte'
 	import TabBar from '#frontend/components/tab-bar.svelte'
+	import TimerBar from '#frontend/components/timer-bar.svelte'
 	import TimerRun from '#frontend/components/timer-run.svelte'
 	import TimerSetup from '#frontend/components/timer-setup.svelte'
 	import Today from '#frontend/components/today.svelte'
@@ -17,6 +18,7 @@
 	import { registerServiceWorker } from '#frontend/lib/pwa.ts'
 	import { initTelegram } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
+	import { timer } from '#frontend/state/timer.svelte.ts'
 
 	let { botUsername }: { botUsername: string } = $props()
 
@@ -34,7 +36,7 @@
 		</div>
 	{:else if app.screen?.name === 'timer'}
 		<!-- Таймер на весь экран, без вкладок: экран не должен отвлекать. -->
-		<TimerRun config={app.screen.config} title={app.screen.title} />
+		<TimerRun />
 	{:else if app.status === 'error'}
 		<div class="shell__center">
 			<p>{app.error}</p>
@@ -48,12 +50,16 @@
 			<TimerSetup />
 			<button class="btn btn--ghost btn--wide" onclick={() => app.start()}>Войти</button>
 		</main>
+		<TimerBar />
 	{:else}
-		<main class="shell__main">
+		<main class="shell__main" class:shell__main--timer={timer.session}>
 			{#if app.screen?.name === 'editor'}
 				<WorkoutEditor date={app.screen.date} draft={app.screen.draft} photo={app.screen.photo} />
 			{:else if app.screen?.name === 'part'}
-				<PartScreen part={app.screen.part} date={app.screen.date} />
+				<!-- key: после таймера тот же комплекс открывается заново, уже с заполненной формой. -->
+				{#key app.screen}
+					<PartScreen part={app.screen.part} date={app.screen.date} prefill={app.screen.prefill} />
+				{/key}
 			{:else if app.screen?.name === 'gyms'}
 				<Gyms />
 			{:else if app.screen?.name === 'injury'}
@@ -72,6 +78,7 @@
 				<Today />
 			{/if}
 		</main>
+		<TimerBar />
 		<TabBar />
 	{/if}
 
@@ -90,6 +97,11 @@
 
 		&__main--bare {
 			padding-bottom: calc(var(--safe-bottom) + 24px);
+		}
+
+		/* Под плашку свёрнутого таймера, чтобы она не закрывала низ страницы. */
+		&__main--timer {
+			padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 88px);
 		}
 
 		&__center {

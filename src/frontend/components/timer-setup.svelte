@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Icon from '#frontend/components/icon.svelte'
-	import { haptic } from '#frontend/lib/telegram.ts'
+	import { confirmAction, haptic } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
+	import { timer } from '#frontend/state/timer.svelte.ts'
 	import { formatClock, totalMs, type TimerConfig } from '#shared/timer.ts'
 
 	type Preset = 'for_time' | 'amrap' | 'emom' | 'tabata' | 'intervals'
@@ -54,7 +55,10 @@
 	})
 	const total = $derived(totalMs(config))
 
-	function start() {
+	async function start() {
+		if (timer.session && !timer.finished && !(await confirmAction('Другой таймер ещё идёт. Запустить новый?')))
+			return
+
 		try {
 			localStorage.setItem(
 				STORAGE_KEY,
@@ -65,7 +69,8 @@
 		}
 
 		haptic('medium')
-		app.open({ name: 'timer', config, title: LABELS[preset] })
+		timer.start(config, LABELS[preset], null)
+		app.open({ name: 'timer' })
 	}
 </script>
 
