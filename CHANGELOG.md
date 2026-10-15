@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/aimuzov-projects/wodlog/compare/v1.6.0...v1.7.0) (2026-10-15)
+
+
+### Features
+
+* put screen titles into the telegram top bar ([#23](https://github.com/aimuzov-projects/wodlog/issues/23)) ([9208764](https://github.com/aimuzov-projects/wodlog/commit/920876433fb9b49215f31616e28d8fc197431d70))
+
 ## [1.6.0](https://github.com/aimuzov-projects/wodlog/compare/v1.5.0...v1.6.0) (2026-10-15)
 
 
