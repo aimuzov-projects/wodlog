@@ -1,0 +1,141 @@
+<script lang="ts">
+	import { onMount } from 'svelte'
+
+	import GymSetup from '#frontend/components/gym-setup.svelte'
+	import Gyms from '#frontend/components/gyms.svelte'
+	import Injuries from '#frontend/components/injuries.svelte'
+	import InjuryScreen from '#frontend/components/injury-screen.svelte'
+	import Login from '#frontend/components/login.svelte'
+	import PartScreen from '#frontend/components/part-screen.svelte'
+	import Profile from '#frontend/components/profile.svelte'
+	import Rating from '#frontend/components/rating.svelte'
+	import TabBar from '#frontend/components/tab-bar.svelte'
+	import TimerRun from '#frontend/components/timer-run.svelte'
+	import TimerSetup from '#frontend/components/timer-setup.svelte'
+	import Today from '#frontend/components/today.svelte'
+	import WorkoutEditor from '#frontend/components/workout-editor.svelte'
+	import { registerServiceWorker } from '#frontend/lib/pwa.ts'
+	import { initTelegram } from '#frontend/lib/telegram.ts'
+	import { app } from '#frontend/state/app.svelte.ts'
+
+	let { botUsername }: { botUsername: string } = $props()
+
+	onMount(() => {
+		initTelegram()
+		registerServiceWorker()
+		void app.start()
+	})
+</script>
+
+<div class="shell">
+	{#if app.status === 'loading'}
+		<div class="shell__center" aria-busy="true">
+			<div class="shell__logo">WODlog</div>
+		</div>
+	{:else if app.screen?.name === 'timer'}
+		<!-- Таймер на весь экран, без вкладок: экран не должен отвлекать. -->
+		<TimerRun config={app.screen.config} title={app.screen.title} />
+	{:else if app.status === 'error'}
+		<div class="shell__center">
+			<p>{app.error}</p>
+			<button class="btn btn--primary" onclick={() => location.reload()}>Попробовать снова</button>
+			<button class="btn" onclick={() => (app.status = 'timer')}>Открыть таймер</button>
+		</div>
+	{:else if app.status === 'login'}
+		<Login {botUsername} />
+	{:else if app.status === 'timer'}
+		<main class="shell__main shell__main--bare">
+			<TimerSetup />
+			<button class="btn btn--ghost btn--wide" onclick={() => app.start()}>Войти</button>
+		</main>
+	{:else}
+		<main class="shell__main">
+			{#if app.screen?.name === 'editor'}
+				<WorkoutEditor date={app.screen.date} draft={app.screen.draft} photo={app.screen.photo} />
+			{:else if app.screen?.name === 'part'}
+				<PartScreen part={app.screen.part} date={app.screen.date} />
+			{:else if app.screen?.name === 'gyms'}
+				<Gyms />
+			{:else if app.screen?.name === 'injury'}
+				<InjuryScreen id={app.screen.id} />
+			{:else if app.tab === 'timer'}
+				<TimerSetup />
+			{:else if app.tab === 'injuries'}
+				<Injuries />
+			{:else if app.tab === 'profile'}
+				<Profile />
+			{:else if !app.gym}
+				<GymSetup />
+			{:else if app.tab === 'rating'}
+				<Rating />
+			{:else}
+				<Today />
+			{/if}
+		</main>
+		<TabBar />
+	{/if}
+
+	{#if app.toast}
+		<div class="shell__toast" class:shell__toast--error={app.toast.error} role="status">{app.toast.text}</div>
+	{/if}
+</div>
+
+<style>
+	.shell {
+		min-height: 100dvh;
+
+		&__main {
+			padding: calc(var(--safe-top) + 12px) var(--gutter) calc(var(--tabbar-height) + var(--safe-bottom) + 24px);
+		}
+
+		&__main--bare {
+			padding-bottom: calc(var(--safe-bottom) + 24px);
+		}
+
+		&__center {
+			display: grid;
+			gap: 16px;
+			place-content: center;
+			min-height: 100dvh;
+			padding: var(--gutter);
+			text-align: center;
+		}
+
+		&__logo {
+			font-family: var(--font-display);
+			font-size: 2rem;
+			font-weight: 800;
+			letter-spacing: -0.02em;
+			animation: pulse 1.2s ease-in-out infinite alternate;
+		}
+
+		&__toast {
+			position: fixed;
+			z-index: 20;
+			right: var(--gutter);
+			bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 12px);
+			left: var(--gutter);
+			padding: 12px 16px;
+			border-radius: var(--radius);
+			font-weight: 500;
+			color: var(--bg);
+			background: var(--fg);
+			box-shadow: 0 8px 24px rgb(0 0 0 / 20%);
+		}
+
+		&__toast--error {
+			color: #ffffff;
+			background: var(--danger);
+		}
+	}
+
+	@keyframes pulse {
+		from {
+			opacity: 0.4;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+</style>

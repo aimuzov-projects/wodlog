@@ -19,7 +19,8 @@
 		"format:check": "prettier --check .",
 		"lint:css": "stylelint \"src/**/*.{css,astro,svelte}\"",
 		"lint:js": "oxlint --deny-warnings",
-		"lint:fix": "oxlint --fix"
+		"lint:fix": "oxlint --fix",
+		"api": "node --watch --env-file-if-exists=.env src/backend/server.ts"
 	},
 	"dependencies": {
 		"@astrojs/sitemap": "3.7.4",
@@ -39,9 +40,12 @@
 		"prettier": "3.9.9",
 		"stylelint": "17.16.0",
 		"svelte-check": "4.7.6",
-		"typescript": "6.0.3"
+		"typescript": "6.0.3",
+		"workbox-build": "7.4.1"
 	},
 	"imports": {
-		"#frontend/*": "./src/frontend/*"
+		"#frontend/*": "./src/frontend/*",
+		"#backend/*": "./src/backend/*",
+		"#shared/*": "./src/shared/*"
 	}
 }

@@ -1,28 +1,11 @@
 ---
+import App from '#frontend/components/app.svelte'
 import Base from '#frontend/layouts/base.astro'
-import { site } from '#frontend/data/site.ts'
 ---
 
-<Base>
-	<main class="home">
-		<div class="container">
-			<h1 class="home__title">{site.name}</h1>
-			<p class="home__lead">{site.description}</p>
-		</div>
-	</main>
+<Base app>
+	<!-- Скрипт Telegram должен успеть до приложения: он ставит тему и safe area в CSS-переменные. -->
+	<script is:inline slot="head" src="https://telegram.org/js/telegram-web-app.js?59"></script>
+	<App client:only="svelte" botUsername={import.meta.env.PUBLIC_BOT_USERNAME ?? ''} />
+	<noscript>WODlog работает только с включённым JavaScript.</noscript>
 </Base>
-
-<style>
-	.home {
-		padding-block: var(--section-y);
-
-		&__title {
-			font-size: clamp(2.4rem, 6vw, 3.6rem);
-		}
-
-		&__lead {
-			max-width: 60ch;
-			color: var(--muted);
-		}
-	}
-</style>

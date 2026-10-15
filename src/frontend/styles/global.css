@@ -1,16 +1,59 @@
+/* Цвета берутся из темы Telegram (`--tg-theme-*` ставит telegram-web-app.js), а в обычном
+   браузере -- свои светлая и тёмная палитры ниже. */
 :root {
-	--font-sans: system-ui, sans-serif;
+	--font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--font-display: 'SF Pro Display', system-ui, sans-serif;
+	--font-mono: ui-monospace, 'SF Mono', 'Roboto Mono', monospace;
 
-	--container: 1180px;
-	--gutter: 20px;
-	--section-y: clamp(32px, 3.5vw, 52px);
+	--gutter: 16px;
+	--radius: 14px;
+	--radius-small: 10px;
+	--tabbar-height: 64px;
 
-	--bg: #ffffff;
-	--fg: #1d1d1f;
-	--muted: #6e6e73;
-	--accent: #0066cc;
+	--own-bg: #f2f2f7;
+	--own-surface: #ffffff;
+	--own-fg: #111114;
+	--own-muted: #6e6e76;
+	/* Акцент подобран под контраст AA: на светлом фоне темнее, на тёмном -- светлее с тёмным текстом. */
+	--own-accent: #c23308;
+	--own-accent-fg: #ffffff;
+	--own-line: #e3e3e8;
+
+	--bg: var(--tg-theme-secondary-bg-color, var(--own-bg));
+	--surface: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, var(--own-surface)));
+	--fg: var(--tg-theme-text-color, var(--own-fg));
+	--muted: var(--tg-theme-hint-color, var(--own-muted));
+	--accent: var(--tg-theme-button-color, var(--own-accent));
+	--accent-fg: var(--tg-theme-button-text-color, var(--own-accent-fg));
+	--link: var(--tg-theme-link-color, var(--own-accent));
+	--danger: var(--tg-theme-destructive-text-color, #e5484d);
+	--line: var(--tg-theme-section-separator-color, var(--own-line));
+	--gold: #f5b301;
+	--silver: #a3acb9;
+	--bronze: #cd7f32;
+
+	/* В fullscreen Telegram рисует свои кнопки поверх страницы: отступаем на обе зоны. */
+	--safe-top: calc(
+		var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)) + var(--tg-content-safe-area-inset-top, 0px)
+	);
+	--safe-bottom: calc(
+		var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) +
+			var(--tg-content-safe-area-inset-bottom, 0px)
+	);
 
 	color-scheme: light;
+
+	@media (prefers-color-scheme: dark) {
+		--own-bg: #0c0c0f;
+		--own-surface: #18181d;
+		--own-fg: #f4f4f6;
+		--own-muted: #8d8d97;
+		--own-accent: #ff6a3d;
+		--own-accent-fg: #111114;
+		--own-line: #2a2a31;
+
+		color-scheme: dark;
+	}
 }
 
 *,
@@ -19,26 +62,33 @@
 	box-sizing: border-box;
 }
 
-/* Колонка не ниже экрана, чтобы на короткой странице подвал оставался внизу. */
 body {
-	display: flex;
-	flex-direction: column;
+	overscroll-behavior: none;
 	min-height: 100dvh;
 	margin: 0;
 	font-family: var(--font-sans);
-	line-height: 1.5;
+	line-height: 1.4;
 	color: var(--fg);
 	background: var(--bg);
+	-webkit-tap-highlight-color: transparent;
 }
 
-/* Safari на iPhone приближает страницу к полю с текстом мельче 16px, стоит в нём встать.
-   Класс компонента перебивает это правило, поэтому своё поле на телефоне — тоже от 1rem. */
+/* Safari на iPhone приближает страницу к полю с текстом мельче 16px, стоит в нём встать. */
 input,
 textarea,
 select {
+	font: inherit;
+	color: inherit;
+
 	@media (--touch) {
 		font-size: max(1rem, 1em);
 	}
+}
+
+button {
+	cursor: pointer;
+	font: inherit;
+	color: inherit;
 }
 
 img {
@@ -47,9 +97,152 @@ img {
 	height: auto;
 }
 
+h1,
+h2,
+h3,
+p {
+	margin: 0;
+}
+
+/* Общие элементы интерфейса: кнопки, карточки, поля. */
+
+.btn {
+	display: inline-flex;
+	gap: 8px;
+	align-items: center;
+	justify-content: center;
+	min-height: 48px;
+	padding: 12px 18px;
+	border: 0;
+	border-radius: var(--radius);
+	font-weight: 600;
+	color: var(--fg);
+	text-decoration: none;
+	background: color-mix(in srgb, var(--fg) 8%, transparent);
+	transition: transform 0.1s ease;
+
+	&:active {
+		transform: scale(0.97);
+	}
+
+	&:disabled {
+		cursor: default;
+		opacity: 0.5;
+	}
+
+	&--primary {
+		color: var(--accent-fg);
+		background: var(--accent);
+	}
+
+	&--ghost {
+		color: var(--link);
+		background: transparent;
+	}
+
+	&--danger {
+		color: var(--danger);
+	}
+
+	&--small {
+		min-height: 36px;
+		padding: 6px 12px;
+		border-radius: var(--radius-small);
+		font-size: 0.9rem;
+	}
+
+	&--wide {
+		width: 100%;
+	}
+}
+
+.card {
+	padding: 16px;
+	border-radius: var(--radius);
+	background: var(--surface);
+}
+
+.field {
+	display: grid;
+	gap: 6px;
+
+	&__label {
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--muted);
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+	}
+
+	&__input {
+		width: 100%;
+		min-height: 44px;
+		padding: 10px 12px;
+		border: 1px solid var(--line);
+		border-radius: var(--radius-small);
+		background: var(--surface);
+
+		&:focus {
+			border-color: var(--accent);
+			outline: none;
+		}
+	}
+
+	&__textarea {
+		resize: vertical;
+		min-height: 88px;
+	}
+}
+
+.chips {
+	scrollbar-width: none;
+	overflow-x: auto;
+	display: flex;
+	gap: 6px;
+}
+
+.chip {
+	flex: none;
+	padding: 8px 14px;
+	border: 0;
+	border-radius: 999px;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--fg);
+	white-space: nowrap;
+	background: color-mix(in srgb, var(--fg) 8%, transparent);
+
+	&--active {
+		color: var(--accent-fg);
+		background: var(--accent);
+	}
+}
+
+.section-title {
+	margin: 20px 4px 8px;
+	font-size: 0.8rem;
+	font-weight: 700;
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+
+.muted {
+	color: var(--muted);
+}
+
+.visually-hidden {
+	position: absolute;
+	overflow: hidden;
+	width: 1px;
+	height: 1px;
+	white-space: nowrap;
+	clip-path: inset(50%);
+}
+
 .container {
 	width: 100%;
-	max-width: calc(var(--container) + var(--gutter) * 2);
+	max-width: 720px;
 	margin-inline: auto;
 	padding-inline: var(--gutter);
 }

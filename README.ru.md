@@ -29,22 +29,28 @@
 </table>
 -->
 
-<p>Живёт на <a href="https://wodlog.aimuzov.online">wodlog.aimuzov.online</a>. Статичный сайт на <a href="https://astro.build">Astro</a>, интерактивные островки на <a href="https://svelte.dev">Svelte</a>.</p>
+<p>Telegram Mini App <a href="https://t.me/wodlogrobot">@wodlogrobot</a> на весь экран и PWA на <a href="https://wodlog.aimuzov.online">wodlog.aimuzov.online</a>. Фронт на <a href="https://astro.build">Astro</a> и <a href="https://svelte.dev">Svelte</a>, API на голом Node с SQLite.</p>
 
 ## Что внутри
 
-- **Главная** (`/`): название и описание сайта из [`src/frontend/data/site.ts`](src/frontend/data/site.ts).
-- **404**: заглушка «такой страницы нет» со ссылкой на главную.
-- **Футер**: подпись автора из [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit) со ссылкой на исходный код, `repo` в [`site.ts`](src/frontend/data/site.ts).
+- **Тренировка дня.** Одна на зал и дату. Кто-то фотографирует доску, OpenRouter распознаёт разминку и комплексы (AMRAP, EMOM, For Time, силовая), человек правит черновик, и тренировка появляется у всего зала. Править её может любой участник.
+- **Результаты.** В каждом комплексе свой результат: RX или Scaled, раунды и повторы, время или кап, рабочий вес, а ещё вес и инвентарь по каждому движению.
+- **Рейтинг.** Лидерборд комплекса и сводная таблица зала за неделю, месяц и всё время: очко за участие плюс 10, 8, 6, 5, 4, 3, 2, 1 за места. Правила подсчёта — в [`src/shared/scoring.ts`](src/shared/scoring.ts).
+- **Открытый и закрытый профиль.** Закрытый ведёт статистику только для себя и в таблицы не попадает.
+- **Залы по приглашению.** Ссылка `t.me/wodlogrobot?startapp=gym_<код>` сразу добавляет человека в зал.
+- **Таймер.** For Time, AMRAP, EMOM, Tabata и интервалы со звуком, вибрацией и неспящим экраном. Работает без входа и офлайн. Из комплекса запускается с параметрами с доски.
+- **Травмы.** Справочник частых травм кроссфита: что это, откуда берётся и как тренироваться вокруг.
+- **Профиль.** История результатов и личные рекорды по движениям.
 
 ## Как устроено
 
 Всё лежит в `src/`:
 
-- [`src/frontend`](src/frontend): сайт на Astro, это `srcDir` в `astro.config.mjs`. Импорты — через `#frontend/*`.
-- Если проекту нужен свой API, он встаёт рядом с сайтом, как в shkatova-psychologist и prestige-logist: сервис в `src/backend` (`#backend/*`, голый Node без сборки), общий для обеих сторон код в `src/shared` (`#shared/*`), образ в `deploy/backend.Dockerfile` и второй сервис в `deploy/docker-compose.yml`. Сайт из `src/backend` ничего не импортирует.
+- [`src/frontend`](src/frontend): Astro, это `srcDir` в `astro.config.mjs`. Приложение — один Svelte-остров на главной ([`components/app.svelte`](src/frontend/components/app.svelte)), экраны переключаются без роутера ([`state/app.svelte.ts`](src/frontend/state/app.svelte.ts)). Обвязка Telegram (fullscreen, safe area, тема, «Назад», вибрация) — в [`lib/telegram.ts`](src/frontend/lib/telegram.ts).
+- [`src/backend`](src/backend): API на `node:http` и `node:sqlite`, Node запускает TypeScript сам, без сборки и зависимостей. Вход — подписанный initData Mini App или Telegram Login Widget в браузере, дальше сессионный токен. Бот только отвечает на `/start` кнопкой Mini App прямо в ответе на webhook.
+- [`src/shared`](src/shared): типы, нормализация тренировки и результата, подсчёт рейтинга и логика таймера. Нужны обеим сторонам, все с тестами.
 
-Всё про сервер — в [`deploy`](deploy): Dockerfile, compose, nginx и скрипт выкладки.
+Всё про сервер — в [`deploy`](deploy): Dockerfile фронта и API, compose, nginx.
 
 Все файлы, компоненты тоже, называются в kebab-case: `base.astro`, `section-photo.astro`. Имя в разметке задаёт импорт (`import Base from '#frontend/layouts/base.astro'`), а за файлами следит правило `unicorn/filename-case` в oxlint.
 
@@ -53,10 +59,13 @@
 Стек и раскладка — из [infra-site-template](https://github.com/aimuzov-projects/infra-site-template): Astro + Svelte 5, Prettier, oxlint, stylelint (BEM), `node --test` для unit-тестов, Playwright для e2e. Конфиги Prettier, stylelint, oxlint и Playwright и шаги CI берутся из [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit). Node берётся из [`mise.toml`](mise.toml), эта же версия закреплена в `package.json` и в [`deploy/frontend.Dockerfile`](deploy/frontend.Dockerfile).
 
 ```sh
-cp .env.example .env   # может остаться пустым, но файл должен быть
+cp .env.example .env   # BOT_TOKEN обязателен, для входа без Telegram: DEV_LOGIN=1 и DATA_DIR=./data
 npm ci
-npm run dev
+npm run api            # API на :8787
+npm run dev            # фронт, /api проксируется на API
 ```
+
+Без `OPENROUTER_API_KEY` распознавание отвечает 503 и тренировку вводят вручную.
 
 Перед коммитом — те же проверки, что в CI:
 
@@ -64,7 +73,7 @@ npm run dev
 npm run format:check && npm run lint:js && npm run lint:css && npm run check && npm test
 ```
 
-E2E-тесты в [`e2e`](e2e) собирают сайт и открывают его в Chromium: каждая страница из sitemap отвечает без ошибок в консоли и проходит axe. Браузер ставится один раз через `npx playwright install chromium`.
+E2E-тесты в [`e2e`](e2e) собирают сайт и открывают его в Chromium: каждая страница из sitemap отвечает без ошибок в консоли и проходит axe, таймер Tabata проходит подготовку, работу, отдых и паузу. Браузер ставится один раз через `npx playwright install chromium`.
 
 ```sh
 npm run test:e2e
@@ -81,12 +90,27 @@ Safari на iPhone сам приближает страницу, когда вс
 Сборка кладёт в каждую страницу CSP с хешами скриптов и стилей Astro (настройка `security.csp` в `astro.config.mjs`). В `npm run dev` политики нет, поэтому нарушения видны только после `npm run build && npm run preview` и на проде.
 
 - Никаких атрибутов `style=""` и обработчиков вроде `onclick`: стили задаются классами и правилами в `<style>`, обработчики живут в `<script>`.
-- Внешний скрипт, картинку или запрос (виджет, карту, шрифт с CDN) сначала нужно разрешить в `security.csp`. Сейчас внешних источников там нет.
+- Внешний скрипт, картинку или запрос (виджет, карту, шрифт с CDN) сначала нужно разрешить в `security.csp`. Сейчас там только Telegram: SDK Mini App и Login Widget с `telegram.org`, окно виджета с `oauth.telegram.org` и аватарки с `t.me`.
+- Встраивание в iframe Telegram Web разрешает не CSP страницы, а Caddy: `frame-ancestors` в `sites/wodlog.caddy` infra-server.
 - После таких правок стоит открыть консоль браузера в `npm run preview`: всё заблокированное браузер пишет туда.
 
 ## Выкладка
 
-Сервер проектов из [infra-server](https://github.com/aimuzov-projects/infra-server): мерж релизного PR, который ведёт release-please, запускает `deploy.yml`, он гоняет проверки и заходит по SSH. Шаги обоих берутся из [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit), там же адрес сервера и его строка `known_hosts`. Там ключ запускает общий [`deploy/site.sh`](https://github.com/aimuzov-projects/infra-server/blob/main/deploy/site.sh) из infra-server, который подтягивает `main` и пересобирает контейнер `wodlog` (nginx со статикой) из [`deploy/docker-compose.yml`](deploy/docker-compose.yml). Домен и TLS держит общий Caddy. `.env` лежит на сервере в `/srv/wodlog`.
+Сервер проектов из [infra-server](https://github.com/aimuzov-projects/infra-server): мерж релизного PR, который ведёт release-please, запускает `deploy.yml`, он гоняет проверки и заходит по SSH. Шаги обоих берутся из [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit), там же адрес сервера и его строка `known_hosts`. Там ключ запускает общий [`deploy/site.sh`](https://github.com/aimuzov-projects/infra-server/blob/main/deploy/site.sh) из infra-server, который подтягивает `main` и пересобирает контейнеры `wodlog` (nginx со статикой) и `wodlog-api` из [`deploy/docker-compose.yml`](deploy/docker-compose.yml). Домен и TLS держит общий Caddy, `/api/*` он отдаёт в `wodlog-api`. База и фото досок лежат в volume `wodlog-data`. В OpenRouter API ходит через `vpn:3128` из infra-server. `.env` лежит на сервере в `/srv/wodlog`, образец — [`.env.example`](.env.example).
+
+### Бот
+
+В [@BotFather](https://t.me/BotFather) для `@wodlogrobot`:
+
+- `/newapp` или Bot Settings → Configure Mini App: Main Mini App с адресом `https://wodlog.aimuzov.online`. Тогда работают ссылки `t.me/wodlogrobot?startapp=…`.
+- `/setdomain` → `wodlog.aimuzov.online`: без этого Login Widget в браузере пишет «Bot domain invalid».
+- Webhook для `/start`, с `WEBHOOK_SECRET` из `.env`:
+
+```sh
+curl "https://api.telegram.org/bot$BOT_TOKEN/setWebhook" \
+  -d url=https://wodlog.aimuzov.online/api/telegram/webhook \
+  -d secret_token=$WEBHOOK_SECRET -d allowed_updates='["message"]'
+```
 
 Job выкладки запускается, только когда переменная репозитория `DEPLOY_ENABLED` равна `true`, так что пока сервер не готов, релиз гоняет одни проверки.
 

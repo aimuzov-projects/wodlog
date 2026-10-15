@@ -29,24 +29,30 @@
 </table>
 -->
 
-<p>Lives at <a href="https://wodlog.aimuzov.online">wodlog.aimuzov.online</a>. A static <a href="https://astro.build">Astro</a> site, interactive islands are written in <a href="https://svelte.dev">Svelte</a>.</p>
+<p>A full-screen Telegram Mini App <a href="https://t.me/wodlogrobot">@wodlogrobot</a> and a PWA at <a href="https://wodlog.aimuzov.online">wodlog.aimuzov.online</a>. The front end is <a href="https://astro.build">Astro</a> and <a href="https://svelte.dev">Svelte</a>, the API is plain Node with SQLite.</p>
 
-The site is in Russian, so the names below are translated.
+The app is in Russian, so the names below are translated.
 
 ## What's inside
 
-- **Home** (`/`): the site name and description from [`src/frontend/data/site.ts`](src/frontend/data/site.ts).
-- **404**: a "no such page" stub with a link home.
-- **Footer**: the author credit from [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit) with a link to the source code, `repo` in [`site.ts`](src/frontend/data/site.ts).
+- **Workout of the day.** One per gym and date. Someone takes a photo of the board, OpenRouter reads the warm-up and the parts (AMRAP, EMOM, For Time, strength), a person fixes the draft, and the whole gym gets the workout. Any member can edit it.
+- **Results.** Each part has its own result: RX or Scaled, rounds and reps, time or cap, working weight, plus the weight and equipment per movement.
+- **Leaderboards.** One per part and a gym table for the week, month and all time: a point for taking part plus 10, 8, 6, 5, 4, 3, 2, 1 for places. Scoring rules are in [`src/shared/scoring.ts`](src/shared/scoring.ts).
+- **Public and private profiles.** A private one keeps stats for its owner only and stays out of the tables.
+- **Invite-only gyms.** The link `t.me/wodlogrobot?startapp=gym_<code>` adds a person to the gym right away.
+- **Timer.** For Time, AMRAP, EMOM, Tabata and intervals with sound, vibration and the screen kept on. Works without signing in and offline. A part starts it with the numbers from the board.
+- **Injuries.** A reference of common CrossFit injuries: what they are, where they come from and how to train around them.
+- **Profile.** Result history and personal records per movement.
 
 ## How it is built
 
 Everything lives in `src/`:
 
-- [`src/frontend`](src/frontend): the Astro site, it is the `srcDir` in `astro.config.mjs`. Imports go through `#frontend/*`.
-- When the project needs its own API, it goes next to the site, the way shkatova-psychologist and prestige-logist do it: the service in `src/backend` (`#backend/*`, plain Node running TypeScript, no build), code both sides need in `src/shared` (`#shared/*`), the image in `deploy/backend.Dockerfile` and a second service in `deploy/docker-compose.yml`. The site never imports from `src/backend`.
+- [`src/frontend`](src/frontend): Astro, the `srcDir` in `astro.config.mjs`. The app is one Svelte island on the home page ([`components/app.svelte`](src/frontend/components/app.svelte)), screens switch without a router ([`state/app.svelte.ts`](src/frontend/state/app.svelte.ts)). The Telegram glue (fullscreen, safe area, theme, Back button, haptics) is in [`lib/telegram.ts`](src/frontend/lib/telegram.ts).
+- [`src/backend`](src/backend): the API on `node:http` and `node:sqlite`, Node runs the TypeScript itself, no build and no dependencies. Sign-in is the signed Mini App initData or the Telegram Login Widget in a browser, then a session token. The bot only answers `/start` with a Mini App button, right in the webhook response.
+- [`src/shared`](src/shared): types, workout and result normalization, scoring and the timer logic. Both sides use them, all are tested.
 
-Everything about the server is in [`deploy`](deploy): Dockerfiles, compose, nginx and the deploy script.
+Everything about the server is in [`deploy`](deploy): Dockerfiles of the front end and the API, compose, nginx.
 
 Every file, components included, is named in kebab-case: `base.astro`, `section-photo.astro`. The name used in markup comes from the import (`import Base from '#frontend/layouts/base.astro'`), and the `unicorn/filename-case` rule in oxlint keeps file names in line.
 
@@ -55,10 +61,13 @@ Every file, components included, is named in kebab-case: `base.astro`, `section-
 Stack and layout follow [infra-site-template](https://github.com/aimuzov-projects/infra-site-template): Astro + Svelte 5, Prettier, oxlint, stylelint (BEM), `node --test` for unit tests, Playwright for e2e. The Prettier, stylelint, oxlint and Playwright configs and the CI steps come from [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit). Node comes from [`mise.toml`](mise.toml), the same version is pinned in `package.json` and [`deploy/frontend.Dockerfile`](deploy/frontend.Dockerfile).
 
 ```sh
-cp .env.example .env   # may stay empty, but the file has to exist
+cp .env.example .env   # BOT_TOKEN is required; to sign in without Telegram: DEV_LOGIN=1 and DATA_DIR=./data
 npm ci
-npm run dev
+npm run api            # API on :8787
+npm run dev            # front end, /api is proxied to the API
 ```
+
+Without `OPENROUTER_API_KEY` recognition answers 503 and the workout is typed in by hand.
 
 Before committing, the same checks as in CI:
 
@@ -66,7 +75,7 @@ Before committing, the same checks as in CI:
 npm run format:check && npm run lint:js && npm run lint:css && npm run check && npm test
 ```
 
-E2E tests in [`e2e`](e2e) build the site and open it in Chromium: every sitemap page answers without console errors and passes axe. The browser is installed once with `npx playwright install chromium`.
+E2E tests in [`e2e`](e2e) build the site and open it in Chromium: every sitemap page answers without console errors and passes axe, and the Tabata timer goes through prep, work, rest and pause. The browser is installed once with `npx playwright install chromium`.
 
 ```sh
 npm run test:e2e
@@ -83,12 +92,27 @@ Zoom as a whole is not turned off with `maximum-scale=1` or `user-scalable=no` i
 The build puts a CSP with hashes of Astro's scripts and styles into every page (the `security.csp` option in `astro.config.mjs`). `npm run dev` has no policy, so violations only show up after `npm run build && npm run preview` and in production.
 
 - No `style=""` attributes or handlers like `onclick`: styles go through classes and rules in `<style>`, handlers live in `<script>`.
-- An external script, image or request (a widget, a map, a font from a CDN) has to be allowed in `security.csp` first. Right now there are no external sources there.
+- An external script, image or request (a widget, a map, a font from a CDN) has to be allowed in `security.csp` first. Right now only Telegram is there: the Mini App SDK and the Login Widget from `telegram.org`, the widget window from `oauth.telegram.org` and avatars from `t.me`.
+- Embedding into the Telegram Web iframe is allowed by Caddy, not by the page CSP: `frame-ancestors` in `sites/wodlog.caddy` of infra-server.
 - After such changes, check the browser console in `npm run preview`: the browser reports everything it blocks there.
 
 ## Deployment
 
-The projects server from [infra-server](https://github.com/aimuzov-projects/infra-server): merging the release PR that release-please keeps open runs `deploy.yml`, which runs the checks and logs in over SSH. The steps of both come from [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit), which also holds the server address and its `known_hosts` line. There the key runs the shared [`deploy/site.sh`](https://github.com/aimuzov-projects/infra-server/blob/main/deploy/site.sh) of infra-server, which pulls `main` and rebuilds the `wodlog` container (nginx with the static site) from [`deploy/docker-compose.yml`](deploy/docker-compose.yml). The domain and TLS are handled by the shared Caddy. `.env` lives on the server in `/srv/wodlog`.
+The projects server from [infra-server](https://github.com/aimuzov-projects/infra-server): merging the release PR that release-please keeps open runs `deploy.yml`, which runs the checks and logs in over SSH. The steps of both come from [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit), which also holds the server address and its `known_hosts` line. There the key runs the shared [`deploy/site.sh`](https://github.com/aimuzov-projects/infra-server/blob/main/deploy/site.sh) of infra-server, which pulls `main` and rebuilds the `wodlog` (nginx with the static site) and `wodlog-api` containers from [`deploy/docker-compose.yml`](deploy/docker-compose.yml). The domain and TLS are handled by the shared Caddy, which sends `/api/*` to `wodlog-api`. The database and board photos live in the `wodlog-data` volume. The API reaches OpenRouter through `vpn:3128` of infra-server. `.env` lives on the server in `/srv/wodlog`, the template is [`.env.example`](.env.example).
+
+### Bot
+
+In [@BotFather](https://t.me/BotFather) for `@wodlogrobot`:
+
+- `/newapp` or Bot Settings → Configure Mini App: the Main Mini App at `https://wodlog.aimuzov.online`. That makes `t.me/wodlogrobot?startapp=…` links work.
+- `/setdomain` → `wodlog.aimuzov.online`: without it the Login Widget in a browser says "Bot domain invalid".
+- The webhook for `/start`, with `WEBHOOK_SECRET` from `.env`:
+
+```sh
+curl "https://api.telegram.org/bot$BOT_TOKEN/setWebhook" \
+  -d url=https://wodlog.aimuzov.online/api/telegram/webhook \
+  -d secret_token=$WEBHOOK_SECRET -d allowed_updates='["message"]'
+```
 
 The deploy job runs only when the repository variable `DEPLOY_ENABLED` is `true`, so until the server is set up, a release only runs the checks.
 

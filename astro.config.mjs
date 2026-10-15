@@ -2,30 +2,37 @@ import sitemap from '@astrojs/sitemap'
 import svelte from '@astrojs/svelte'
 import { defineConfig } from 'astro/config'
 
+import pwa from './src/frontend/integrations/pwa.ts'
+
 export default defineConfig({
-	// Сайт живёт в `src/frontend` для того чтобы рядом поместились `src/backend`
-	// и `src/shared`, когда проекту понадобится своё API.
+	// Фронт в `src/frontend`, API в `src/backend`, общие типы и логика в `src/shared`.
 	srcDir: './src/frontend',
 	// Абсолютные URL в canonical, og:url и sitemap.
 	site: 'https://wodlog.aimuzov.online',
 	// CSS немного, и встроенный в HTML он не блокирует первую отрисовку
 	// отдельным запросом.
 	build: { inlineStylesheets: 'always' },
-	// Svelte для интерактивных островов, остальное -- статический HTML
-	// с ванильными скриптами.
-	integrations: [svelte(), sitemap()],
+	// Приложение -- один Svelte-остров на главной, сервис-воркер для офлайна собирает pwa().
+	integrations: [svelte(), sitemap(), pwa()],
 	// Подсветка Shiki несовместима с CSP.
 	markdown: { syntaxHighlight: false },
+	// В dev API крутится отдельно (`npm run api`), Vite пробрасывает к нему запросы.
+	vite: {
+		server: { proxy: { '/api': 'http://localhost:8787' } },
+	},
 	// Astro кладёт в `<meta>` страницы CSP с хешами своих скриптов и стилей.
-	// `frame-ancestors` в `<meta>` не работает, встраивание блокирует Caddy
-	// через `X-Frame-Options`.
+	// `frame-ancestors` в `<meta>` не работает, встраивание в Telegram разрешает Caddy.
 	security: {
 		csp: {
-			scriptDirective: { resources: ["'self'"] },
+			// SDK Mini App и Login Widget грузятся с telegram.org.
+			scriptDirective: { resources: ["'self'", 'https://telegram.org'] },
 			directives: [
 				"default-src 'self'",
-				"img-src 'self' data:",
+				// Аватарки Telegram отдаёт с t.me, фото доски приходит через blob: и data:.
+				"img-src 'self' data: blob: https://t.me https://*.telegram.org",
 				"connect-src 'self'",
+				// Окно Login Widget.
+				'frame-src https://oauth.telegram.org',
 				"object-src 'none'",
 				"base-uri 'self'",
 				"form-action 'self'",

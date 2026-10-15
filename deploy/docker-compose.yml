@@ -1,5 +1,5 @@
-# Сайт на сервере проектов. Порты 80/443 занимает общий Caddy
-# из aimuzov-projects/infra-server, он проксирует сюда домен через сеть `edge`.
+# WODlog на сервере проектов. Порты 80/443 держит общий Caddy из aimuzov-projects/infra-server:
+# он проксирует домен сюда по сети `edge`, а /api/* -- сервису API.
 
 name: wodlog
 
@@ -22,12 +22,46 @@ services:
       - edge
     logging: *logging
 
-# Переменные сборки лежат в `/srv/wodlog/.env`, образец -- `.env.example`.
+  # База SQLite и фото досок лежат в volume data и переживают пересборку.
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/backend.Dockerfile
+    image: wodlog-api
+    container_name: wodlog-api
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      # OpenRouter с сервера доступен только через VPN, см. «VPN egress» в infra-server.
+      HTTPS_PROXY: http://vpn:3128
+      NODE_USE_ENV_PROXY: '1'
+    volumes:
+      - data:/data
+    mem_limit: 256m
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8787/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - edge
+      - vpn
+    logging: *logging
+
+# Переменные лежат в `/srv/wodlog/.env`, образец -- `.env.example`.
 secrets:
   env:
     file: ../.env
 
+volumes:
+  data:
+    name: wodlog-data
+
 networks:
   edge:
     name: edge
+    external: true
+  vpn:
+    name: vpn
     external: true

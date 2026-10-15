@@ -11,9 +11,11 @@ type Props = {
 	description?: string
 	/** `false` у служебных страниц вроде 404: без canonical и с запретом индексации. */
 	index?: boolean
+	/** Страница приложения: без подвала и до краёв экрана под вырезом. */
+	app?: boolean
 }
 
-const { title, description = site.description, index = true } = Astro.props
+const { title, description = site.description, index = true, app = false } = Astro.props
 const fullTitle = pageTitle(title)
 const canonical = new URL(Astro.url.pathname, Astro.site)
 ---
@@ -22,7 +24,15 @@ const canonical = new URL(Astro.url.pathname, Astro.site)
 <html lang="ru">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta
+			name="viewport"
+			content={
+				app ? 'width=device-width, initial-scale=1, viewport-fit=cover' : 'width=device-width, initial-scale=1'
+			}
+		/>
+		<meta name="theme-color" content="#0c0c0f" />
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 		<title>{fullTitle}</title>
 		<meta name="description" content={description} />
 		{index ? <link rel="canonical" href={canonical} /> : <meta name="robots" content="noindex" />}
@@ -37,6 +47,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site)
 	</head>
 	<body>
 		<slot />
-		<Footer />
+		{!app && <Footer />}
 	</body>
 </html>
