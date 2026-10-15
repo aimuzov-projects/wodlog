@@ -3,11 +3,10 @@
 	import { haptic } from '#frontend/lib/telegram.ts'
 	import { app, type Tab } from '#frontend/state/app.svelte.ts'
 
-	const tabs: { id: Tab; label: string; icon: 'board' | 'timer' | 'trophy' | 'bandage' | 'user' }[] = [
+	const tabs: { id: Tab; label: string; icon: 'board' | 'timer' | 'trophy' | 'user' }[] = [
 		{ id: 'today', label: 'Тренировка', icon: 'board' },
 		{ id: 'timer', label: 'Таймер', icon: 'timer' },
 		{ id: 'rating', label: 'Рейтинг', icon: 'trophy' },
-		{ id: 'injuries', label: 'Травмы', icon: 'bandage' },
 		{ id: 'profile', label: 'Профиль', icon: 'user' },
 	]
 </script>
@@ -37,7 +36,7 @@
 		bottom: 0;
 		left: 0;
 		display: grid;
-		grid-template-columns: repeat(5, 1fr);
+		grid-template-columns: repeat(4, 1fr);
 		height: calc(var(--tabbar-height) + var(--safe-bottom));
 		padding-bottom: var(--safe-bottom);
 		border-top: 1px solid var(--line);

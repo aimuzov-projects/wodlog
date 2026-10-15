@@ -15,7 +15,7 @@ export default function pwa(): AstroIntegration {
 				const root = fileURLToPath(dir)
 				const { count, size, warnings } = await generateSW({
 					globDirectory: root,
-					globPatterns: ['**/*.{js,css,html,svg,png,jpg,webmanifest}'],
+					globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
 					globIgnores: ['404.html', 'sitemap-*.xml'],
 					swDest: `${root}/sw.js`,
 					// Экраны переключаются внутри приложения, любой адрес открывает его же.

@@ -12,7 +12,7 @@ import { timer } from '#frontend/state/timer.svelte.ts'
 import type { TimerResult } from '#shared/timer.ts'
 import type { Gym, Me, Part, Workout, WorkoutDraft } from '#shared/types.ts'
 
-export type Tab = 'today' | 'timer' | 'rating' | 'injuries' | 'profile'
+export type Tab = 'today' | 'timer' | 'rating' | 'profile'
 
 export type Screen =
 	| { name: 'editor'; date: string; draft: WorkoutDraft; photo: string | null }
@@ -20,7 +20,6 @@ export type Screen =
 	/** Сам таймер живёт в `state/timer.svelte.ts`, экран только показывает его. */
 	| { name: 'timer' }
 	| { name: 'gyms' }
-	| { name: 'injury'; id: string }
 
 type Login = { token: string; me: Me; gyms: Gym[]; startParam?: string | null }
 

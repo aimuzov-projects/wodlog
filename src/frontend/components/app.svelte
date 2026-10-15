@@ -3,8 +3,6 @@
 
 	import GymSetup from '#frontend/components/gym-setup.svelte'
 	import Gyms from '#frontend/components/gyms.svelte'
-	import Injuries from '#frontend/components/injuries.svelte'
-	import InjuryScreen from '#frontend/components/injury-screen.svelte'
 	import Login from '#frontend/components/login.svelte'
 	import PartScreen from '#frontend/components/part-screen.svelte'
 	import Profile from '#frontend/components/profile.svelte'
@@ -62,12 +60,8 @@
 				{/key}
 			{:else if app.screen?.name === 'gyms'}
 				<Gyms />
-			{:else if app.screen?.name === 'injury'}
-				<InjuryScreen id={app.screen.id} />
 			{:else if app.tab === 'timer'}
 				<TimerSetup />
-			{:else if app.tab === 'injuries'}
-				<Injuries />
 			{:else if app.tab === 'profile'}
 				<Profile />
 			{:else if !app.gym}
