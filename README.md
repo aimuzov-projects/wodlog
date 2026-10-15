@@ -49,7 +49,7 @@ The app is in Russian, so the names below are translated.
 Everything lives in `src/`:
 
 - [`src/frontend`](src/frontend): Astro, the `srcDir` in `astro.config.mjs`. The app is one Svelte island on the home page ([`components/app.svelte`](src/frontend/components/app.svelte)), screens switch without a router ([`state/app.svelte.ts`](src/frontend/state/app.svelte.ts)). The Telegram glue (fullscreen, safe area, theme, Back button, haptics) is in [`lib/telegram.ts`](src/frontend/lib/telegram.ts).
-- [`src/backend`](src/backend): the API on `node:http` and `node:sqlite`, Node runs the TypeScript itself, no build and no dependencies. Sign-in is the signed Mini App initData or the Telegram Login Widget in a browser, then a session token. The bot only answers `/start` with a Mini App button, right in the webhook response.
+- [`src/backend`](src/backend): the API on `node:http` and `node:sqlite`, Node runs the TypeScript itself, no build and no dependencies. Sign-in is the signed Mini App initData or the Telegram Login Widget in a browser, then a session token. The bot lives in the same process: it fetches updates with long polling and answers `/start` with a Mini App button.
 - [`src/shared`](src/shared): types, workout and result normalization, scoring and the timer logic. Both sides use them, all are tested.
 
 Everything about the server is in [`deploy`](deploy): Dockerfiles of the front end and the API, compose, nginx.
@@ -106,13 +106,8 @@ In [@BotFather](https://t.me/BotFather) for `@wodlogrobot`:
 
 - `/newapp` or Bot Settings → Configure Mini App: the Main Mini App at `https://wodlog.aimuzov.online`. That makes `t.me/wodlogrobot?startapp=…` links work.
 - `/setdomain` → `wodlog.aimuzov.online`: without it the Login Widget in a browser says "Bot domain invalid".
-- The webhook for `/start`, with `WEBHOOK_SECRET` from `.env`:
 
-```sh
-curl "https://api.telegram.org/bot$BOT_TOKEN/setWebhook" \
-  -d url=https://wodlog.aimuzov.online/api/telegram/webhook \
-  -d secret_token=$WEBHOOK_SECRET -d allowed_updates='["message"]'
-```
+The API does the rest on start: it drops the webhook, sets the menu button with the Mini App and fetches updates with long polling. A webhook doesn't work here: connections from Telegram's servers never reach a server in Russia, while outgoing requests go through `vpn:3128`. Locally `BOT_POLLING=0` turns the bot off, otherwise dev takes updates away from production.
 
 The deploy job runs only when the repository variable `DEPLOY_ENABLED` is `true`, so until the server is set up, a release only runs the checks.
 
