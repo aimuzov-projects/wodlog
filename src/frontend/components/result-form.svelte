@@ -144,7 +144,7 @@
 	{#if part.kind === 'for_time'}
 		<label class="result-form__check">
 			<input type="checkbox" bind:checked={capped} />
-			Не уложился в кап
+			Не уложился в лимит времени
 		</label>
 	{/if}
 

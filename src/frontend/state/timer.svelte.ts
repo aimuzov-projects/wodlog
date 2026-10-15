@@ -64,72 +64,39 @@ class TimerSession {
 	#lastPhase = ''
 
 	constructor() {
-		if (this.session?.startedAt) this.#run()
-	}
-
-	start(config: TimerConfig, title: string, source: TimerSource | null) {
-		this.#stop()
-		this.session = { config, title, source, accumulatedMs: 0, startedAt: null, laps: 0, finished: false }
-		this.#lastSecond = -1
-		this.#lastPhase = ''
-		this.#save()
-	}
-
-	toggle() {
 		const session = this.session
 
-		if (!session) return
+		if (!session || session.finished) return
 
-		unlockAudio()
-		haptic('medium')
-
-		if (session.startedAt) {
-			this.#pause()
-		} else {
-			if (session.finished) this.reset()
-
-			session.startedAt = Date.now()
-			this.#save()
-			this.#run()
-		}
+		// Пауз больше нет: таймер, сохранённый на паузе старой версией, просто продолжает идти.
+		session.startedAt ??= Date.now()
+		this.#run()
 	}
 
-	reset() {
-		if (!this.session) return
-
+	/**
+	 * Запускает таймер сразу с отсчёта подготовки: «Старт» уже нажат, второй раз жать незачем.
+	 * Вызывается по нажатию, поэтому здесь же можно разбудить звук.
+	 */
+	start(config: TimerConfig, title: string, source: TimerSource | null) {
 		this.#stop()
-		this.session.accumulatedMs = 0
-		this.session.startedAt = null
-		this.session.laps = 0
-		this.session.finished = false
+		unlockAudio()
+		this.session = { config, title, source, accumulatedMs: 0, startedAt: Date.now(), laps: 0, finished: false }
 		this.#lastSecond = -1
 		this.#lastPhase = ''
 		this.#save()
+		this.#run()
 	}
 
-	/** Сразу к работе, без отсчёта подготовки. До старта -- заодно и запускает таймер. */
+	/** Сразу к работе, без отсчёта подготовки. */
 	skipPrep() {
 		const session = this.session
 
-		if (!session || this.view?.phase !== 'prep') return
-
-		const prepMs = PREP_SEC * 1000
+		if (!session?.startedAt || this.view?.phase !== 'prep') return
 
 		haptic('medium')
-
-		if (session.startedAt) {
-			session.startedAt = Date.now() - (prepMs - session.accumulatedMs)
-			this.#save()
-			this.#tick()
-		} else {
-			unlockAudio()
-			session.accumulatedMs = prepMs
-			session.startedAt = Date.now()
-			// Чтобы первый тик подал сигнал старта, как при обычном переходе к работе.
-			this.#lastPhase = 'prep:0'
-			this.#save()
-			this.#run()
-		}
+		session.startedAt = Date.now() - (PREP_SEC * 1000 - session.accumulatedMs)
+		this.#save()
+		this.#tick()
 	}
 
 	lap() {
@@ -138,17 +105,6 @@ class TimerSession {
 		haptic('light')
 		this.session.laps += 1
 		this.#save()
-	}
-
-	/** Финиш For Time раньше капа: время замирает, дальше -- запись результата. */
-	finish() {
-		if (!this.session || this.view?.phase !== 'work') return
-
-		this.#pause()
-		this.session.finished = true
-		this.#save()
-		haptic('success')
-		beep('end')
 	}
 
 	/** Результат для комплекса, из которого запустили таймер. */

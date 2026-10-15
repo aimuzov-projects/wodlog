@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 // Таймер работает без входа и без API: e2e-сборка поднимает только статику.
-test('interval timer runs through prep, work and rest', async ({ page }) => {
+test('interval timer starts right away and runs through prep, work and rest', async ({ page }) => {
 	await page.clock.install()
 	await page.goto('/')
 	await page.getByRole('button', { name: 'Просто открыть таймер' }).click()
@@ -15,10 +15,10 @@ test('interval timer runs through prep, work and rest', async ({ page }) => {
 	await page.getByRole('button', { name: 'Старт' }).click()
 
 	const phase = page.locator('.timer-run__phase')
-	const clock = page.locator('.timer-run__clock')
 
+	// Второй раз жать «Старт» не нужно: отсчёт уже идёт, а кнопок внизу нет вовсе.
 	await expect(phase).toHaveText('Приготовиться')
-	await page.getByRole('button', { name: 'Старт' }).click()
+	await expect(page.locator('.timer-run button')).toHaveCount(3)
 
 	await page.clock.runFor(10_500)
 	await expect(phase).toHaveText('Работа')
@@ -27,17 +27,7 @@ test('interval timer runs through prep, work and rest', async ({ page }) => {
 	await page.clock.runFor(20_000)
 	await expect(phase).toHaveText('Отдых')
 
-	await page.getByRole('button', { name: 'Пауза' }).click()
-
-	const paused = await clock.textContent()
-
-	await page.clock.runFor(5_000)
-	await expect(clock).toHaveText(paused!)
-
-	await page.getByRole('button', { name: 'Пауза' }).waitFor({ state: 'detached' })
-	await page.getByRole('button', { name: 'Дальше' }).click()
-
-	// Свёрнутый таймер продолжает идти, а плашка над вкладками возвращает к нему.
+	// Свёрнутый таймер продолжает идти, а плашка внизу возвращает к нему.
 	await page.getByRole('button', { name: 'Свернуть таймер' }).click()
 	await expect(page.getByRole('heading', { name: 'Таймер' })).toBeVisible()
 
@@ -48,7 +38,7 @@ test('interval timer runs through prep, work and rest', async ({ page }) => {
 	// И даже перезагрузку переживает: время считается по часам и лежит в localStorage.
 	await page.reload()
 	await page.getByRole('button', { name: 'Просто открыть таймер' }).click()
-	// 10 с подготовки + (20 работы + 10 отдыха) × 2 = 70 с, после паузы набегает до 70,5 -- третий раунд.
+	// 10 с подготовки + (20 работы + 10 отдыха) × 2 = 70 с, к этому моменту набегает 70,5 -- третий раунд.
 	await page.clock.runFor(40_000)
 	await bar.click()
 	await expect(page.locator('.timer-run__round')).toHaveText('Раунд 3 / 8')
@@ -57,7 +47,7 @@ test('interval timer runs through prep, work and rest', async ({ page }) => {
 	await expect(bar).toHaveCount(0)
 })
 
-test('the prep countdown can be skipped before and after start', async ({ page }) => {
+test('a tap during the prep countdown skips it', async ({ page }) => {
 	await page.clock.install()
 	await page.goto('/')
 	await page.getByRole('button', { name: 'Просто открыть таймер' }).click()
@@ -66,17 +56,12 @@ test('the prep countdown can be skipped before and after start', async ({ page }
 
 	const phase = page.locator('.timer-run__phase')
 
-	// До старта: «Пропустить» сразу запускает работу.
-	await page.getByRole('button', { name: 'Пропустить' }).click()
-	await expect(phase).toHaveText('Работа')
-	await expect(page.getByRole('button', { name: 'Пауза' })).toBeVisible()
-
-	// Во время отсчёта: работа начинается сразу, время не теряется.
-	await page.getByRole('button', { name: 'Сбросить' }).click()
-	await page.getByRole('button', { name: 'Старт' }).click()
 	await page.clock.runFor(3_000)
 	await expect(phase).toHaveText('Приготовиться')
-	await page.getByRole('button', { name: 'Пропустить' }).click()
+	await page.getByRole('button', { name: 'Пропустить отсчёт' }).click()
 	await expect(phase).toHaveText('Работа')
-	await expect(page.getByRole('button', { name: 'Пропустить' })).toHaveCount(0)
+
+	// Дальше тот же тап по экрану отмечает круги.
+	await page.getByRole('button', { name: 'Отметить раунд' }).click()
+	await expect(page.locator('.timer-run__round')).toHaveText('Раундов: 1')
 })

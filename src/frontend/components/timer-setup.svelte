@@ -91,8 +91,14 @@
 
 	<div class="card timer-setup__params">
 		{#if preset === 'for_time'}
-			<Stepper label="Кап" value={capMin} onchange={(v) => (capMin = v)} step={1} min={0} unit="мин" />
-			<p class="muted timer-setup__hint">0 — без капа, секундомер до остановки.</p>
+			<Stepper
+				label="Лимит времени"
+				value={capMin}
+				onchange={(v) => (capMin = v)}
+				min={0}
+				format={(v) => (v ? String(v) : 'нет')}
+				unit={capMin ? 'мин' : ''}
+			/>
 		{:else if preset === 'amrap'}
 			<Stepper
 				label="Длительность"
@@ -130,10 +136,6 @@
 		&__params {
 			display: grid;
 			gap: 18px;
-		}
-
-		&__hint {
-			font-size: 0.85rem;
 		}
 
 		&__start {

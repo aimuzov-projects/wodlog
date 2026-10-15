@@ -48,7 +48,7 @@ test('garbage becomes an empty workout', () => {
 
 test('requires the ranking value for each part kind', () => {
 	assert.throws(() => resultInput({ division: 'rx' }, 'for_time'), /время/)
-	assert.throws(() => resultInput({ capped: true }, 'for_time'), /капа/)
+	assert.throws(() => resultInput({ capped: true }, 'for_time'), /лимит/)
 	assert.throws(() => resultInput({}, 'amrap'), /раунды/)
 	assert.throws(() => resultInput({}, 'strength'), /вес/)
 	assert.doesNotThrow(() => resultInput({}, 'other'))

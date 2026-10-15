@@ -13,8 +13,6 @@
 		left: 'M15 6l-6 6 6 6',
 		right: 'M9 6l6 6-6 6',
 		play: 'M7 4l13 8-13 8z',
-		pause: 'M7 4h3v16H7z M14 4h3v16h-3z',
-		reset: 'M4 12a8 8 0 1 0 3-6.2 M4 4v5h5',
 		trash: 'M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13',
 		share: 'M12 3v12 M7 8l5-5 5 5 M5 14v6h14v-6',
 		lock: 'M6 11h12v10H6z M8 11V7a4 4 0 0 1 8 0v4',

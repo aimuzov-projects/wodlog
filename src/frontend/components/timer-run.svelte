@@ -67,41 +67,28 @@
 			<button class="btn btn--small timer-run__end" onclick={end}>Завершить</button>
 		</header>
 
-		<button class="timer-run__face" onclick={() => timer.lap()} aria-label="Отметить раунд">
+		<!-- Весь экран -- одна большая кнопка: на подготовке тап пропускает отсчёт, в работе отмечает круг. -->
+		<button
+			class="timer-run__face"
+			onclick={() => (view.phase === 'prep' ? timer.skipPrep() : timer.lap())}
+			aria-label={view.phase === 'prep' ? 'Пропустить отсчёт' : 'Отметить раунд'}
+		>
 			<span class="timer-run__phase">{PHASE_LABELS[view.phase]}</span>
 			<span class="timer-run__clock">{formatClock(view.displayMs, countsDown)}</span>
-			{#if view.rounds}
+			{#if view.phase === 'prep'}
+				<span class="timer-run__tap">тап по экрану — сразу к работе</span>
+			{:else if view.rounds}
 				<span class="timer-run__round">Раунд {Math.max(1, view.round)} / {view.rounds}</span>
-			{:else if view.phase !== 'prep'}
+			{:else}
 				<span class="timer-run__round">Раундов: {session.laps}</span>
 				{#if view.phase === 'work'}<span class="timer-run__tap">тап по экрану — +1 раунд</span>{/if}
 			{/if}
 			{#if session.config.mode === 'for_time' && session.config.capSec}
-				<span class="timer-run__cap">кап {formatClock(session.config.capSec * 1000)}</span>
+				<span class="timer-run__cap">лимит {formatClock(session.config.capSec * 1000)}</span>
 			{/if}
 		</button>
 
 		<div class="timer-run__progress"></div>
-
-		<footer class="timer-run__controls">
-			<button class="btn timer-run__button" aria-label="Сбросить" onclick={() => timer.reset()}
-				><Icon name="reset" size={28} /></button
-			>
-			<button class="btn btn--primary timer-run__button timer-run__button--main" onclick={() => timer.toggle()}>
-				<Icon name={timer.running ? 'pause' : 'play'} size={32} />
-				{timer.running ? 'Пауза' : timer.finished ? 'Заново' : timer.elapsedMs ? 'Дальше' : 'Старт'}
-			</button>
-			{#if view.phase === 'prep'}
-				<button class="btn timer-run__button" onclick={() => timer.skipPrep()}>Пропустить</button>
-			{:else if session.config.mode === 'for_time'}
-				<button
-					class="btn timer-run__button"
-					aria-label="Финиш"
-					disabled={view.phase !== 'work'}
-					onclick={() => timer.finish()}>Финиш</button
-				>
-			{/if}
-		</footer>
 	</section>
 {/if}
 
@@ -112,7 +99,7 @@
 		position: fixed;
 		inset: 0;
 		display: grid;
-		grid-template-rows: auto 1fr auto auto;
+		grid-template-rows: auto 1fr auto;
 		padding: calc(var(--safe-top) + 8px) var(--gutter) calc(var(--safe-bottom) + 16px);
 		color: #ffffff;
 		background: #0b0b0e;
@@ -188,25 +175,6 @@
 				var(--phase) calc(var(--progress) * 100%),
 				rgb(255 255 255 / 12%) calc(var(--progress) * 100%)
 			);
-		}
-
-		&__controls {
-			display: grid;
-			grid-template-columns: 1fr 2fr 1fr;
-			gap: 10px;
-		}
-
-		&__button {
-			min-height: 72px;
-			color: #ffffff;
-			background: rgb(255 255 255 / 12%);
-		}
-
-		&__button--main {
-			grid-column: 2;
-			font-size: 1.2rem;
-			color: var(--accent-fg);
-			background: var(--accent);
 		}
 	}
 
