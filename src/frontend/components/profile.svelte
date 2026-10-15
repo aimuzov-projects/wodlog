@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ScreenTitle from '#frontend/components/screen-title.svelte'
 	import Avatar from '#frontend/components/avatar.svelte'
 	import Icon from '#frontend/components/icon.svelte'
 	import { api } from '#frontend/lib/api.ts'
@@ -44,16 +45,18 @@
 </script>
 
 <section class="profile">
+	<ScreenTitle text="Профиль" />
+
 	{#if app.me}
 		<header class="profile__header">
 			<Avatar user={app.me} size={64} />
 			<div>
-				<h1 class="profile__name">{app.me.name}</h1>
+				<p class="profile__name">{app.me.name}</p>
 				{#if app.me.username}<p class="muted">@{app.me.username}</p>{/if}
 			</div>
 		</header>
 
-		<h2 class="section-title">Профиль</h2>
+		<h2 class="section-title">Видимость</h2>
 		<div class="card profile__visibility" role="radiogroup" aria-label="Видимость профиля">
 			{#each [['public', 'Открытый', 'Участвую в рейтинге, мои результаты видят в зале'], ['private', 'Закрытый', 'Веду статистику только для себя']] as const as [value, label, hint] (value)}
 				<button
