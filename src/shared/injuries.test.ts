@@ -19,9 +19,11 @@ test('every injury has a unique id and complete content', () => {
 	}
 })
 
-test('injury images exist in public/', () => {
-	for (const { id, image } of INJURIES) {
-		if (image) assert.ok(existsSync(new URL(`../../public${image.src}`, import.meta.url)), `${id}: ${image.src}`)
+test('injury images and videos exist in public/', () => {
+	for (const { id, image, video } of INJURIES) {
+		for (const src of [image?.src, video?.src, video?.poster]) {
+			if (src) assert.ok(existsSync(new URL(`../../public${src}`, import.meta.url)), `${id}: ${src}`)
+		}
 	}
 })
 

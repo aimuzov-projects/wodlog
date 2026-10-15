@@ -21,7 +21,24 @@
 			<h1 class="injury__title">{injury.title}</h1>
 		</header>
 
-		{#if injury.image}
+		{#if injury.video}
+			<figure class="injury__figure">
+				<!-- Звука в ролике нет, подписи вшиты в кадр: дорожка субтитров не нужна. -->
+				<!-- svelte-ignore a11y_media_has_caption -->
+				<video
+					class="injury__image"
+					src={injury.video.src}
+					poster={injury.video.poster}
+					width="1920"
+					height="1080"
+					controls
+					muted
+					playsinline
+					preload="metadata"
+				></video>
+				<figcaption class="muted">{injury.video.caption}</figcaption>
+			</figure>
+		{:else if injury.image}
 			<figure class="injury__figure">
 				<img class="injury__image" src={injury.image.src} alt={injury.image.alt} width="1200" height="670" />
 				<figcaption class="muted">{injury.image.caption}</figcaption>
@@ -102,6 +119,7 @@
 
 		&__image {
 			width: 100%;
+			height: auto;
 			border-radius: var(--radius);
 			background: #ffffff;
 		}
