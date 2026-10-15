@@ -4,7 +4,6 @@
 	import { fly } from 'svelte/transition'
 
 	import { humanDate, localDate, shiftDate, shortDate } from '#frontend/lib/format.ts'
-	import { swipe, type SwipeDirection } from '#frontend/lib/swipe.ts'
 	import { haptic } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
 	import { timer } from '#frontend/state/timer.svelte.ts'
@@ -37,12 +36,6 @@
 		app.date = shiftDate(app.date, days)
 	}
 
-	// Свайп влево -- следующий день, как перелистнуть страницу. В будущее не листаем.
-	const swipeOptions = $derived({
-		onswipe: (d: SwipeDirection) => go(d === 'left' ? 1 : -1),
-		allowed: (d: SwipeDirection) => d === 'right' || app.date < today,
-	})
-
 	const openPart = (part: Part) => app.open({ name: 'part', part, date: app.date })
 
 	const timerRunning = (part: Part) => timer.session?.source?.part.id === part.id && !timer.finished
@@ -56,7 +49,7 @@
 	}
 </script>
 
-<section class="today" use:swipe={swipeOptions}>
+<section class="today">
 	<header class="today__header">
 		<label class="today__date">
 			<h1 class="today__title">{humanDate(app.date, today)}</h1>
@@ -124,18 +117,6 @@
 
 <style>
 	.today {
-		/* Высота экрана целиком: свайп ловится и по пустому месту под тренировкой. */
-		min-height: calc(100dvh - var(--safe-top) - var(--fab-size) - var(--safe-bottom) - 52px);
-
-		&__day {
-			transform: translateX(var(--swipe-dx, 0));
-			transition: transform 0.2s ease;
-		}
-
-		&:global([data-swiping]) &__day {
-			transition: none;
-		}
-
 		&__header {
 			display: flex;
 			gap: 8px;
