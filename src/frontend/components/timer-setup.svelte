@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Stepper from '#frontend/components/stepper.svelte'
 	import ScreenTitle from '#frontend/components/screen-title.svelte'
 	import Icon from '#frontend/components/icon.svelte'
 	import { confirmAction, haptic } from '#frontend/lib/telegram.ts'
@@ -72,23 +73,6 @@
 	}
 </script>
 
-{#snippet stepper(label: string, value: number, set: (v: number) => void, step: number, min: number, unit: string)}
-	<div class="timer-setup__stepper">
-		<span class="field__label">{label}</span>
-		<div class="timer-setup__controls">
-			<button
-				class="btn timer-setup__step"
-				aria-label={`${label}: меньше`}
-				onclick={() => set(Math.max(min, value - step))}>−</button
-			>
-			<span class="timer-setup__value">{value}<small class="timer-setup__unit">{unit}</small></span>
-			<button class="btn timer-setup__step" aria-label={`${label}: больше`} onclick={() => set(value + step)}
-				>+</button
-			>
-		</div>
-	</div>
-{/snippet}
-
 <section class="timer-setup">
 	<ScreenTitle text="Таймер" />
 
@@ -107,17 +91,24 @@
 
 	<div class="card timer-setup__params">
 		{#if preset === 'for_time'}
-			{@render stepper('Кап', capMin, (v) => (capMin = v), 1, 0, 'мин')}
+			<Stepper label="Кап" value={capMin} onchange={(v) => (capMin = v)} step={1} min={0} unit="мин" />
 			<p class="muted timer-setup__hint">0 — без капа, секундомер до остановки.</p>
 		{:else if preset === 'amrap'}
-			{@render stepper('Длительность', amrapMin, (v) => (amrapMin = v), 1, 1, 'мин')}
+			<Stepper
+				label="Длительность"
+				value={amrapMin}
+				onchange={(v) => (amrapMin = v)}
+				step={1}
+				min={1}
+				unit="мин"
+			/>
 		{:else if preset === 'emom'}
-			{@render stepper('Интервал', emomSec, (v) => (emomSec = v), 15, 15, 'сек')}
-			{@render stepper('Раунды', emomRounds, (v) => (emomRounds = v), 1, 1, '')}
+			<Stepper label="Интервал" value={emomSec} onchange={(v) => (emomSec = v)} step={15} min={15} unit="сек" />
+			<Stepper label="Раунды" value={emomRounds} onchange={(v) => (emomRounds = v)} step={1} min={1} unit="" />
 		{:else}
-			{@render stepper('Работа', workSec, (v) => (workSec = v), 5, 5, 'сек')}
-			{@render stepper('Отдых', restSec, (v) => (restSec = v), 5, 0, 'сек')}
-			{@render stepper('Раунды', rounds, (v) => (rounds = v), 1, 1, '')}
+			<Stepper label="Работа" value={workSec} onchange={(v) => (workSec = v)} step={5} min={5} unit="сек" />
+			<Stepper label="Отдых" value={restSec} onchange={(v) => (restSec = v)} step={5} min={0} unit="сек" />
+			<Stepper label="Раунды" value={rounds} onchange={(v) => (rounds = v)} step={1} min={1} unit="" />
 		{/if}
 	</div>
 
@@ -139,35 +130,6 @@
 		&__params {
 			display: grid;
 			gap: 18px;
-		}
-
-		&__stepper {
-			display: grid;
-			gap: 8px;
-		}
-
-		&__controls {
-			display: grid;
-			grid-template-columns: 64px 1fr 64px;
-			align-items: center;
-		}
-
-		&__step {
-			font-size: 1.6rem;
-		}
-
-		&__value {
-			font-family: var(--font-mono);
-			font-size: 2.2rem;
-			font-weight: 800;
-			text-align: center;
-		}
-
-		&__unit {
-			margin-left: 4px;
-			font-size: 1rem;
-			font-weight: 600;
-			color: var(--muted);
 		}
 
 		&__hint {
