@@ -8,7 +8,14 @@
 
 import { beep, keepAwake, unlockAudio } from '#frontend/lib/sound.ts'
 import { haptic } from '#frontend/lib/telegram.ts'
-import { resultFromTimer, timerState, type TimerConfig, type TimerResult, type TimerState } from '#shared/timer.ts'
+import {
+	PREP_SEC,
+	resultFromTimer,
+	timerState,
+	type TimerConfig,
+	type TimerResult,
+	type TimerState,
+} from '#shared/timer.ts'
 import type { Part } from '#shared/types.ts'
 
 const STORAGE_KEY = 'wodlog.timer.session'
@@ -98,6 +105,31 @@ class TimerSession {
 		this.#lastSecond = -1
 		this.#lastPhase = ''
 		this.#save()
+	}
+
+	/** Сразу к работе, без отсчёта подготовки. До старта -- заодно и запускает таймер. */
+	skipPrep() {
+		const session = this.session
+
+		if (!session || this.view?.phase !== 'prep') return
+
+		const prepMs = PREP_SEC * 1000
+
+		haptic('medium')
+
+		if (session.startedAt) {
+			session.startedAt = Date.now() - (prepMs - session.accumulatedMs)
+			this.#save()
+			this.#tick()
+		} else {
+			unlockAudio()
+			session.accumulatedMs = prepMs
+			session.startedAt = Date.now()
+			// Чтобы первый тик подал сигнал старта, как при обычном переходе к работе.
+			this.#lastPhase = 'prep:0'
+			this.#save()
+			this.#run()
+		}
 	}
 
 	lap() {
