@@ -15,6 +15,7 @@
 		type Result,
 		type RxWeights,
 	} from '#shared/types.ts'
+	import type { TimerResult } from '#shared/timer.ts'
 	import { rxWeight } from '#shared/workout.ts'
 
 	type Board = { rows: LeaderboardRow[]; mine: Result | null }
@@ -22,12 +23,22 @@
 	let {
 		part,
 		initial,
+		prefill,
 		onsaved,
 		oncancel,
-	}: { part: Part; initial: Result | null; onsaved: (board: Board) => void; oncancel?: () => void } = $props()
+	}: {
+		part: Part
+		initial: Result | null
+		/** Раунды или время с таймера: перекрывают сохранённый результат. */
+		prefill?: TimerResult
+		onsaved: (board: Board) => void
+		oncancel?: () => void
+	} = $props()
 
 	// Форма открывается заново на каждую правку, поэтому берём значения один раз.
-	const start = untrack(() => $state.snapshot(initial))
+	const saved = untrack(() => $state.snapshot(initial))
+	const fromTimer = untrack(() => prefill)
+	const start = saved || fromTimer ? { ...saved, ...(fromTimer && { ...fromTimer, reps: null }) } : null
 	const movements = untrack(() => part.movements)
 
 	let division = $state<Division>(start?.division ?? 'rx')
@@ -42,7 +53,7 @@
 	let load = $state<Load[]>(
 		movements.map(
 			(m) =>
-				start?.load.find((l) => l.movement === m.name) ?? {
+				saved?.load.find((l) => l.movement === m.name) ?? {
 					movement: m.name,
 					weight: null,
 					equipment: m.equipment,

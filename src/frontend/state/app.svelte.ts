@@ -8,15 +8,17 @@
 import { api, getToken, handleUnauthorized, setToken } from '#frontend/lib/api.ts'
 import { localDate } from '#frontend/lib/format.ts'
 import { insideTelegram, inviteFromLaunch, setBackButton, webApp } from '#frontend/lib/telegram.ts'
-import type { TimerConfig } from '#shared/timer.ts'
+import { timer } from '#frontend/state/timer.svelte.ts'
+import type { TimerResult } from '#shared/timer.ts'
 import type { Gym, Me, Part, Workout, WorkoutDraft } from '#shared/types.ts'
 
 export type Tab = 'today' | 'timer' | 'rating' | 'injuries' | 'profile'
 
 export type Screen =
 	| { name: 'editor'; date: string; draft: WorkoutDraft; photo: string | null }
-	| { name: 'part'; part: Part; date: string }
-	| { name: 'timer'; config: TimerConfig; title: string }
+	| { name: 'part'; part: Part; date: string; prefill?: TimerResult }
+	/** Сам таймер живёт в `state/timer.svelte.ts`, экран только показывает его. */
+	| { name: 'timer' }
 	| { name: 'gyms' }
 	| { name: 'injury'; id: string }
 
@@ -164,6 +166,30 @@ class AppState {
 		this.workouts[`${workout.gymId}:${workout.date}`] = workout
 
 		if (!this.dates.includes(workout.date)) this.dates = [...this.dates, workout.date].sort().reverse()
+	}
+
+	/**
+	 * Закрывает таймер комплекса и открывает этот комплекс с формой, заполненной результатом
+	 * таймера. Если таймер запускали прямо с экрана комплекса, тот же экран и переиспользуется.
+	 */
+	showTimerResult() {
+		const source = timer.session?.source
+		const prefill = timer.result()
+
+		timer.close()
+
+		if (!source || !prefill) return this.back()
+
+		const stack = this.stack.filter((s) => s.name !== 'timer')
+		const top = stack.at(-1)
+		const screen: Screen = { name: 'part', part: source.part, date: source.date, prefill }
+
+		this.stack =
+			top?.name === 'part' && top.part.id === source.part.id
+				? [...stack.slice(0, -1), screen]
+				: [...stack, screen]
+
+		this.#syncBack()
 	}
 
 	open(screen: Screen) {

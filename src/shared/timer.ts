@@ -155,6 +155,35 @@ export function formatClock(ms: number, roundUp = false): string {
 	return h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
 }
 
+export type TimerResult = {
+	rounds: number | null
+	timeSec: number | null
+	capped: boolean
+}
+
+/**
+ * Что записать в результат комплекса после таймера.
+ *
+ * AMRAP и упёршийся в кап For Time -- раунды, отмеченные тапами. Финиш For Time -- время.
+ * EMOM -- сколько интервалов прошло, все, если таймер дошёл до конца.
+ */
+export function resultFromTimer(config: TimerConfig, elapsedMs: number, laps: number): TimerResult {
+	const state = timerState(config, elapsedMs)
+	const done = state.phase === 'done'
+
+	switch (config.mode) {
+		case 'for_time':
+			return done
+				? { rounds: laps, timeSec: null, capped: true }
+				: { rounds: null, timeSec: Math.round(state.workElapsedMs / 1000), capped: false }
+		case 'emom':
+		case 'intervals':
+			return { rounds: done ? config.rounds : Math.max(0, state.round - 1), timeSec: null, capped: false }
+		case 'amrap':
+			return { rounds: laps, timeSec: null, capped: false }
+	}
+}
+
 /** Таймер под комплекс тренировки: формат и параметры с доски. */
 export function configForPart(part: {
 	kind: string
