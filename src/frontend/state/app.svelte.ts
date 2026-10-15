@@ -1,0 +1,202 @@
+/**
+ * Состояние приложения: кто вошёл, в каком зале и какой экран открыт.
+ *
+ * Навигация без роутера: пять вкладок и стек экранов поверх них. Стек нужен, чтобы
+ * системная «Назад» Telegram закрывала ровно последний открытый экран.
+ */
+
+import { api, getToken, handleUnauthorized, setToken } from '#frontend/lib/api.ts'
+import { localDate } from '#frontend/lib/format.ts'
+import { insideTelegram, inviteFromLaunch, setBackButton, webApp } from '#frontend/lib/telegram.ts'
+import type { TimerConfig } from '#shared/timer.ts'
+import type { Gym, Me, Part, Workout, WorkoutDraft } from '#shared/types.ts'
+
+export type Tab = 'today' | 'timer' | 'rating' | 'injuries' | 'profile'
+
+export type Screen =
+	| { name: 'editor'; date: string; draft: WorkoutDraft; photo: string | null }
+	| { name: 'part'; part: Part; date: string }
+	| { name: 'timer'; config: TimerConfig; title: string }
+	| { name: 'gyms' }
+	| { name: 'injury'; id: string }
+
+type Login = { token: string; me: Me; gyms: Gym[]; startParam?: string | null }
+
+const GYM_KEY = 'wodlog.gym'
+
+class AppState {
+	/** `timer` -- только таймер, без входа: он нужен и офлайн, и до регистрации. */
+	status = $state<'loading' | 'login' | 'ready' | 'error' | 'timer'>('loading')
+	error = $state('')
+	me = $state<Me | null>(null)
+	gyms = $state<Gym[]>([])
+	gymId = $state<number | null>(null)
+	tab = $state<Tab>('today')
+	stack = $state<Screen[]>([])
+	/** Выбранный день на вкладке «Тренировка». */
+	date = $state(localDate())
+	/** Тренировки по ключу `зал:дата`, `null` -- на этот день тренировки нет. */
+	workouts = $state<Record<string, Workout | null>>({})
+	/** Даты с тренировками в текущем зале. */
+	dates = $state<string[]>([])
+	/** Сообщение внизу экрана: результат сохранён, ошибка сети и т. п. */
+	toast = $state<{ text: string; error: boolean } | null>(null)
+
+	gym = $derived(this.gyms.find((g) => g.id === this.gymId) ?? this.gyms[0] ?? null)
+	screen = $derived(this.stack.at(-1) ?? null)
+
+	#toastTimer: ReturnType<typeof setTimeout> | undefined
+
+	async start() {
+		handleUnauthorized(() => void this.start())
+
+		try {
+			if (insideTelegram()) {
+				const login = await api<Login>('POST', '/api/auth/telegram', { initData: webApp()!.initData })
+
+				await this.#signedIn(login)
+			} else if (getToken()) {
+				const { me, gyms } = await api<{ me: Me; gyms: Gym[] }>('GET', '/api/me')
+
+				await this.#signedIn({ token: getToken()!, me, gyms })
+			} else {
+				this.status = 'login'
+			}
+		} catch (error) {
+			if (this.status !== 'login') {
+				this.status = 'error'
+				this.error = (error as Error).message
+			}
+		}
+	}
+
+	/** Вход из Login Widget или dev-входа. */
+	async signIn(path: string, payload: unknown) {
+		await this.#signedIn(await api<Login>('POST', path, payload))
+	}
+
+	async #signedIn(login: Login) {
+		setToken(login.token)
+		this.me = login.me
+		this.gyms = login.gyms
+
+		try {
+			this.gymId = Number(localStorage.getItem(GYM_KEY)) || null
+		} catch {
+			this.gymId = null
+		}
+
+		const invite = inviteFromLaunch(login.startParam ?? null)
+
+		if (invite) {
+			try {
+				await this.join(invite)
+			} catch (error) {
+				this.notify((error as Error).message, true)
+			}
+
+			// Повторное открытие той же ссылки не должно снова дёргать вступление.
+			history.replaceState(null, '', location.pathname)
+		}
+
+		this.status = 'ready'
+	}
+
+	signOut() {
+		setToken(null)
+		this.me = null
+		this.status = 'login'
+	}
+
+	selectGym(id: number) {
+		this.gymId = id
+
+		try {
+			localStorage.setItem(GYM_KEY, String(id))
+		} catch {
+			// Без хранилища зал просто не запомнится.
+		}
+	}
+
+	async join(code: string) {
+		const gym = await api<Gym>('POST', '/api/gyms/join', { code })
+
+		this.gyms = [...this.gyms.filter((g) => g.id !== gym.id), gym]
+		this.selectGym(gym.id)
+		this.notify(`Вы в зале «${gym.name}»`)
+	}
+
+	async createGym(name: string) {
+		const gym = await api<Gym>('POST', '/api/gyms', { name })
+
+		this.gyms = [...this.gyms, gym]
+		this.selectGym(gym.id)
+	}
+
+	async leaveGym(id: number) {
+		await api('DELETE', `/api/gyms/${id}/membership`)
+		this.gyms = this.gyms.filter((g) => g.id !== id)
+
+		if (this.gymId === id) this.gymId = null
+	}
+
+	workout = $derived(this.gym ? this.workouts[`${this.gym.id}:${this.date}`] : undefined)
+
+	async loadWorkout(force = false) {
+		const gym = this.gym
+
+		if (!gym) return
+
+		const key = `${gym.id}:${this.date}`
+
+		if (!force && key in this.workouts) return
+
+		const { workout, dates } = await api<{ workout: Workout | null; dates: string[] }>(
+			'GET',
+			`/api/gyms/${gym.id}/workouts/${this.date}`,
+		)
+
+		this.workouts[key] = workout
+		this.dates = dates
+	}
+
+	setWorkout(workout: Workout) {
+		this.workouts[`${workout.gymId}:${workout.date}`] = workout
+
+		if (!this.dates.includes(workout.date)) this.dates = [...this.dates, workout.date].sort().reverse()
+	}
+
+	open(screen: Screen) {
+		this.stack = [...this.stack, screen]
+		this.#syncBack()
+	}
+
+	back() {
+		this.stack = this.stack.slice(0, -1)
+		this.#syncBack()
+	}
+
+	/** Заменяет верхний экран, например редактор -- на сохранённую тренировку. */
+	replace(screen: Screen | null) {
+		this.stack = [...this.stack.slice(0, -1), ...(screen ? [screen] : [])]
+		this.#syncBack()
+	}
+
+	switchTab(tab: Tab) {
+		this.tab = tab
+		this.stack = []
+		this.#syncBack()
+	}
+
+	#syncBack() {
+		setBackButton(this.stack.length ? () => this.back() : null)
+	}
+
+	notify(text: string, error = false) {
+		clearTimeout(this.#toastTimer)
+		this.toast = { text, error }
+		this.#toastTimer = setTimeout(() => (this.toast = null), error ? 5000 : 2500)
+	}
+}
+
+export const app = new AppState()
