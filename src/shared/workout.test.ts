@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { InvalidInput, parseModelJson, partKind, resultInput, workoutDraft } from '#shared/workout.ts'
+import {
+	InvalidInput,
+	parseModelJson,
+	partKind,
+	resultInput,
+	rxWeight,
+	withRxLoad,
+	workoutDraft,
+} from '#shared/workout.ts'
 
 test('normalizes free-form part kinds', () => {
 	assert.equal(partKind('AMRAP 12'), 'amrap')
@@ -69,4 +77,32 @@ test('capped For Time drops the time', () => {
 
 test('capped flag only applies to For Time', () => {
 	assert.equal(resultInput({ capped: true, rounds: 5 }, 'amrap').capped, false)
+})
+
+test('picks the RX weight from a pair by the profile setting', () => {
+	const pair = { weightM: 43, weightF: 30 }
+
+	assert.equal(rxWeight(pair, 'm'), 43)
+	assert.equal(rxWeight(pair, 'f'), 30)
+	assert.equal(rxWeight(pair, null), null)
+	assert.equal(rxWeight({ weightM: 24, weightF: null }, null), 24)
+	assert.equal(rxWeight({ weightM: null, weightF: 16 }, 'm'), 16)
+	assert.equal(rxWeight({ weightM: null, weightF: null }, 'f'), null)
+})
+
+test('RX takes the load from the board, Scaled keeps its own', () => {
+	const movements = [
+		{ name: 'Thrusters', reps: '10', weightM: 43, weightF: 30, equipment: 'Штанга' },
+		{ name: 'Pull-ups', reps: '10', weightM: null, weightF: null, equipment: 'Турник' },
+	]
+	const sent = resultInput({ division: 'rx', rounds: 6, load: [{ movement: 'Thrusters', weight: 99 }] }, 'amrap')
+
+	assert.deepEqual(withRxLoad(sent, movements, 'f').load, [
+		{ movement: 'Thrusters', weight: 30, equipment: 'Штанга' },
+		{ movement: 'Pull-ups', weight: null, equipment: 'Турник' },
+	])
+
+	const scaled = { ...sent, division: 'scaled' as const }
+
+	assert.equal(withRxLoad(scaled, movements, 'f'), scaled)
 })

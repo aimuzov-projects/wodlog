@@ -208,6 +208,48 @@ test('full flow: gym, workout of the day, results, rating, privacy', async () =>
 	assert.equal((await call<unknown[]>('GET', '/api/me/history', undefined, bob))[1].length, 1)
 })
 
+test('RX result takes weights from the board by the profile setting', async () => {
+	const kate = await devLogin(10, 'Kate')
+	const [, gym] = await call<Gym>('POST', '/api/gyms', { name: 'Rx Box' }, kate)
+	const [, workout] = await call<Workout>(
+		'PUT',
+		`/api/gyms/${gym.id}/workouts/${DAY}`,
+		{
+			parts: [
+				{
+					kind: 'emom',
+					rounds: 10,
+					intervalSec: 60,
+					movements: [{ name: 'Snatch', reps: '3', weightM: 60, weightF: 40, equipment: 'Штанга' }],
+				},
+			],
+		},
+		kate,
+	)
+	const partId = workout.parts[0].id!
+
+	assert.equal((await call('PATCH', '/api/me', { rxWeights: 'x' }, kate))[0], 400)
+	assert.equal((await call<{ rxWeights: string }>('PATCH', '/api/me', { rxWeights: 'f' }, kate))[1].rxWeights, 'f')
+
+	const [, rx] = await call<{ mine: { load: unknown[] } }>(
+		'PUT',
+		`/api/parts/${partId}/results`,
+		{ division: 'rx', rounds: 10, load: [{ movement: 'Snatch', weight: 100 }] },
+		kate,
+	)
+
+	assert.deepEqual(rx.mine.load, [{ movement: 'Snatch', weight: 40, equipment: 'Штанга' }])
+
+	const [, scaled] = await call<{ mine: { load: unknown[] } }>(
+		'PUT',
+		`/api/parts/${partId}/results`,
+		{ division: 'scaled', rounds: 10, load: [{ movement: 'Snatch', weight: 30, equipment: 'Гантели' }] },
+		kate,
+	)
+
+	assert.deepEqual(scaled.mine.load, [{ movement: 'Snatch', weight: 30, equipment: 'Гантели' }])
+})
+
 test('period start: week from Monday, month from the 1st', () => {
 	assert.equal(periodStart('week', '2026-10-15'), '2026-10-12')
 	assert.equal(periodStart('week', '2026-10-12'), '2026-10-12')

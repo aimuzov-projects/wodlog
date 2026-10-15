@@ -2,9 +2,20 @@
 	import { untrack } from 'svelte'
 
 	import { api } from '#frontend/lib/api.ts'
+	import { plural } from '#frontend/lib/format.ts'
 	import { haptic } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
-	import { EQUIPMENT, type Division, type LeaderboardRow, type Load, type Part, type Result } from '#shared/types.ts'
+	import {
+		EQUIPMENT,
+		type Division,
+		type LeaderboardRow,
+		type Load,
+		type Me,
+		type Part,
+		type Result,
+		type RxWeights,
+	} from '#shared/types.ts'
+	import { rxWeight } from '#shared/workout.ts'
 
 	type Board = { rows: LeaderboardRow[]; mine: Result | null }
 
@@ -38,9 +49,28 @@
 				},
 		),
 	)
+	// EMOM с известным числом раундов обычно закрывают целиком: тогда вводить нечего.
+	const emomRounds = untrack(() => (part.kind === 'emom' ? part.rounds : null))
+	let allRounds = $state(Boolean(emomRounds) && (!start || (start.rounds === emomRounds && !start.reps)))
 	let saving = $state(false)
 
+	// Пару «43/30» без выбора в профиле не разобрать, а одиночный вес общий для всех.
+	const needsRxChoice = $derived(
+		!app.me?.rxWeights &&
+			movements.some((m) => m.weightM !== null && m.weightF !== null && m.weightM !== m.weightF),
+	)
+
 	const num = (value: string) => (value.trim() === '' ? null : Number(value.replace(',', '.')))
+
+	async function chooseRxWeights(rxWeights: RxWeights) {
+		haptic('select')
+
+		try {
+			app.me = await api<Me>('PATCH', '/api/me', { rxWeights })
+		} catch (error) {
+			app.notify((error as Error).message, true)
+		}
+	}
 
 	async function save() {
 		saving = true
@@ -50,8 +80,8 @@
 			const board = await api<Board>('PUT', `/api/parts/${part.id}/results`, {
 				division,
 				capped,
-				rounds: num(rounds),
-				reps: num(reps),
+				rounds: allRounds ? emomRounds : num(rounds),
+				reps: allRounds ? null : num(reps),
 				timeSec: timeSec || null,
 				weight: num(weight),
 				load: $state.snapshot(load),
@@ -129,19 +159,46 @@
 			<input class="field__input result-form__big" inputmode="decimal" bind:value={weight} placeholder="0" />
 		</label>
 	{:else}
-		<div class="result-form__row">
-			<label class="field">
-				<span class="field__label">Раунды</span>
-				<input class="field__input result-form__big" inputmode="numeric" bind:value={rounds} placeholder="0" />
+		{#if emomRounds}
+			<label class="result-form__check">
+				<input type="checkbox" bind:checked={allRounds} />
+				Все {plural(emomRounds, ['раунд', 'раунда', 'раундов'])}
 			</label>
-			<label class="field">
-				<span class="field__label">+ повторы</span>
-				<input class="field__input result-form__big" inputmode="numeric" bind:value={reps} placeholder="0" />
-			</label>
-		</div>
+		{/if}
+		{#if !allRounds}
+			<div class="result-form__row">
+				<label class="field">
+					<span class="field__label">Раунды</span>
+					<input
+						class="field__input result-form__big"
+						inputmode="numeric"
+						bind:value={rounds}
+						placeholder="0"
+					/>
+				</label>
+				<label class="field">
+					<span class="field__label">+ повторы</span>
+					<input
+						class="field__input result-form__big"
+						inputmode="numeric"
+						bind:value={reps}
+						placeholder="0"
+					/>
+				</label>
+			</div>
+		{/if}
 	{/if}
 
-	{#if load.length}
+	{#if division === 'rx' && load.length}
+		<p class="muted result-form__hint">Вес и инвентарь — как на доске.</p>
+		{#if needsRxChoice}
+			<div class="result-form__rx-choice">
+				<span class="result-form__hint">Какие RX-веса ваши? Спросим один раз.</span>
+				<button type="button" class="chip" onclick={() => chooseRxWeights('m')}>Мужские</button>
+				<button type="button" class="chip" onclick={() => chooseRxWeights('f')}>Женские</button>
+			</div>
+		{/if}
+	{:else if load.length}
 		<fieldset class="result-form__load">
 			<legend class="field__label">Вес и инвентарь</legend>
 			{#each load as item, i (i)}
@@ -152,7 +209,7 @@
 						inputmode="decimal"
 						value={item.weight ?? ''}
 						oninput={(e) => (item.weight = num(e.currentTarget.value))}
-						placeholder="кг"
+						placeholder={String(rxWeight(movements[i], app.me?.rxWeights ?? null) ?? 'кг')}
 						aria-label={`${item.movement}: вес, кг`}
 					/>
 					<select
@@ -206,6 +263,17 @@
 			gap: 8px;
 			align-items: center;
 			font-weight: 600;
+		}
+
+		&__hint {
+			font-size: 0.9rem;
+		}
+
+		&__rx-choice {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			align-items: center;
 		}
 
 		&__row {

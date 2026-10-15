@@ -17,12 +17,14 @@ import type {
 	HistoryRow,
 	LeaderboardRow,
 	Me,
+	Movement,
 	Part,
 	PartKind,
 	RatingPeriod,
 	RatingRow,
 	Result,
 	ResultInput,
+	RxWeights,
 	UserBrief,
 	Visibility,
 	Workout,
@@ -102,7 +104,9 @@ CREATE TABLE IF NOT EXISTS results (
 CREATE INDEX IF NOT EXISTS results_user ON results(user_id);
 `
 
-const MIGRATIONS: Record<string, Record<string, string>> = {}
+const MIGRATIONS: Record<string, Record<string, string>> = {
+	users: { rx_weights: 'TEXT' },
+}
 
 const SESSION_TTL = 30 * 24 * 3600
 
@@ -252,11 +256,16 @@ export class Db {
 			...brief(row),
 			username: (row.username as string | null) ?? null,
 			visibility: row.visibility as Visibility,
+			rxWeights: (row.rx_weights as RxWeights | null) ?? null,
 		}
 	}
 
 	setVisibility(userId: number, visibility: Visibility) {
 		this.sql.prepare('UPDATE users SET visibility = ? WHERE id = ?').run(visibility, userId)
+	}
+
+	setRxWeights(userId: number, rxWeights: RxWeights | null) {
+		this.sql.prepare('UPDATE users SET rx_weights = ? WHERE id = ?').run(rxWeights, userId)
 	}
 
 	createSession(userId: number): string {
@@ -478,13 +487,17 @@ export class Db {
 			.run(JSON.stringify(recognized), gymId, date)
 	}
 
-	/** Зал и формат комплекса: по ним проверяется доступ и валидируется результат. */
-	partInfo(partId: number): { gymId: number; kind: PartKind } | null {
+	/** Зал и комплекс: по ним проверяется доступ, валидируется результат и подставляются RX-веса. */
+	partInfo(partId: number): { gymId: number; kind: PartKind; movements: Movement[] } | null {
 		const row = this.sql
-			.prepare('SELECT w.gym_id, p.kind FROM parts p JOIN workouts w ON w.id = p.workout_id WHERE p.id = ?')
+			.prepare(
+				'SELECT w.gym_id, p.kind, p.movements FROM parts p JOIN workouts w ON w.id = p.workout_id WHERE p.id = ?',
+			)
 			.get(partId)
 
-		return row ? { gymId: Number(row.gym_id), kind: row.kind as PartKind } : null
+		return row
+			? { gymId: Number(row.gym_id), kind: row.kind as PartKind, movements: JSON.parse(String(row.movements)) }
+			: null
 	}
 
 	// Результаты
