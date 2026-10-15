@@ -14,8 +14,8 @@ import { verifyInitData, verifyLoginWidget } from '#backend/auth.ts'
 import { Db, type TelegramUser } from '#backend/db.ts'
 import { DEFAULT_MODEL, openRouterRecognizer, RecognizeError, type Recognizer } from '#backend/recognize.ts'
 import { botApi, runBot } from '#backend/telegram.ts'
-import type { RatingPeriod, Visibility } from '#shared/types.ts'
-import { InvalidInput, resultInput, text, workoutDraft } from '#shared/workout.ts'
+import type { RatingPeriod, RxWeights, Visibility } from '#shared/types.ts'
+import { InvalidInput, resultInput, text, withRxLoad, workoutDraft } from '#shared/workout.ts'
 
 // Фото доски приходит data URL внутри JSON, клиент ужимает его до ~1600 px.
 export const BODY_LIMIT = 10 * 1024 * 1024
@@ -179,12 +179,21 @@ export function createApp(db: Db, settings: Settings, recognize: Recognizer | nu
 			'PATCH',
 			/^\/api\/me$/,
 			async ({ user, body }) => {
-				const { visibility } = await body()
+				const patch = await body()
 
-				if (visibility !== 'public' && visibility !== 'private')
-					throw new HttpError(400, 'Видимость: public или private')
+				if ('visibility' in patch) {
+					if (patch.visibility !== 'public' && patch.visibility !== 'private')
+						throw new HttpError(400, 'Видимость: public или private')
 
-				db.setVisibility(user(), visibility as Visibility)
+					db.setVisibility(user(), patch.visibility as Visibility)
+				}
+
+				if ('rxWeights' in patch) {
+					if (patch.rxWeights !== 'm' && patch.rxWeights !== 'f' && patch.rxWeights !== null)
+						throw new HttpError(400, 'RX-веса: m, f или null')
+
+					db.setRxWeights(user(), patch.rxWeights as RxWeights | null)
+				}
 
 				return [200, db.me(user())]
 			},
@@ -341,7 +350,9 @@ export function createApp(db: Db, settings: Settings, recognize: Recognizer | nu
 
 				if (!info || !db.role(info.gymId, user())) throw new HttpError(404, 'Нет такого комплекса')
 
-				db.saveResult(partId, user(), resultInput(await body(), info.kind))
+				const input = resultInput(await body(), info.kind)
+
+				db.saveResult(partId, user(), withRxLoad(input, info.movements, db.me(user())!.rxWeights))
 
 				return [200, db.leaderboard(partId, info.kind, user())]
 			},

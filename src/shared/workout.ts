@@ -13,6 +13,7 @@ import {
 	type Part,
 	type PartKind,
 	type ResultInput,
+	type RxWeights,
 	type WorkoutDraft,
 } from '#shared/types.ts'
 
@@ -187,4 +188,28 @@ export function resultInput(raw: unknown, kind: PartKind): ResultInput {
 	if (kind === 'strength' && result.weight === null) throw new InvalidInput('Укажите рабочий вес')
 
 	return result
+}
+
+/**
+ * RX-вес движения для участника. Пара разных весов без выбора в профиле не угадывается,
+ * а одиночный вес («24 кг») общий для всех.
+ */
+export function rxWeight(movement: Pick<Movement, 'weightM' | 'weightF'>, rx: RxWeights | null): number | null {
+	const { weightM: m, weightF: f } = movement
+
+	if (rx === 'm') return m ?? f
+
+	if (rx === 'f') return f ?? m
+
+	return m !== null && f !== null && m !== f ? null : (m ?? f)
+}
+
+/** В RX вес и инвентарь не вводятся: они те, что на доске. Scaled остаётся как прислали. */
+export function withRxLoad(result: ResultInput, movements: Movement[], rx: RxWeights | null): ResultInput {
+	if (result.division !== 'rx') return result
+
+	return {
+		...result,
+		load: movements.map((m) => ({ movement: m.name, weight: rxWeight(m, rx), equipment: m.equipment })),
+	}
 }

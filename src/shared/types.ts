@@ -88,9 +88,14 @@ export type UserBrief = {
 	photoUrl: string | null
 }
 
+/** Какой из пары RX-весов на доске («43/30») мой: мужской или женский. */
+export type RxWeights = 'm' | 'f'
+
 export type Me = UserBrief & {
 	username: string | null
 	visibility: Visibility
+	/** `null` -- ещё не выбрано, тогда пара разных весов в RX не подставляется. */
+	rxWeights: RxWeights | null
 }
 
 export type GymRole = 'admin' | 'member'

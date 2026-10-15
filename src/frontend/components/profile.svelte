@@ -5,7 +5,7 @@
 	import { resultLine, shortDate } from '#frontend/lib/format.ts'
 	import { haptic, insideTelegram } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
-	import { PART_KIND_LABELS, type HistoryRow, type Me, type Visibility } from '#shared/types.ts'
+	import { PART_KIND_LABELS, type HistoryRow, type Me } from '#shared/types.ts'
 
 	let history = $state<HistoryRow[] | null>(null)
 
@@ -32,11 +32,11 @@
 		return [...best].sort((a, b) => b[1] - a[1]).slice(0, 12)
 	})
 
-	async function setVisibility(visibility: Visibility) {
+	async function updateMe(patch: Partial<Pick<Me, 'visibility' | 'rxWeights'>>) {
 		haptic('select')
 
 		try {
-			app.me = await api<Me>('PATCH', '/api/me', { visibility })
+			app.me = await api<Me>('PATCH', '/api/me', patch)
 		} catch (error) {
 			app.notify((error as Error).message, true)
 		}
@@ -61,7 +61,7 @@
 					class:profile__option--active={app.me.visibility === value}
 					role="radio"
 					aria-checked={app.me.visibility === value}
-					onclick={() => setVisibility(value)}
+					onclick={() => updateMe({ visibility: value })}
 				>
 					<span class="profile__option-label">
 						{#if value === 'private'}<Icon name="lock" size={16} />{/if}
@@ -70,6 +70,24 @@
 					<span class="muted profile__option-hint">{hint}</span>
 				</button>
 			{/each}
+		</div>
+
+		<h2 class="section-title">RX-веса</h2>
+		<div class="card profile__rx">
+			<p class="muted profile__option-hint">
+				На доске RX-вес часто пишут парой, «43/30». В RX подставляем ваш, вводить его не нужно.
+			</p>
+			<div class="chips" role="radiogroup" aria-label="Мои RX-веса">
+				{#each [['m', 'Мужские'], ['f', 'Женские']] as const as [value, label] (value)}
+					<button
+						class="chip"
+						class:chip--active={app.me.rxWeights === value}
+						role="radio"
+						aria-checked={app.me.rxWeights === value}
+						onclick={() => updateMe({ rxWeights: value })}>{label}</button
+					>
+				{/each}
+			</div>
 		</div>
 
 		<h2 class="section-title">Залы</h2>
@@ -163,6 +181,11 @@
 
 		&__option-hint {
 			font-size: 0.85rem;
+		}
+
+		&__rx {
+			display: grid;
+			gap: 10px;
 		}
 
 		&__gyms {

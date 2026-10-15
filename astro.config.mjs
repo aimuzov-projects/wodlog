@@ -18,7 +18,8 @@ export default defineConfig({
 	markdown: { syntaxHighlight: false },
 	// В dev API крутится отдельно (`npm run api`), Vite пробрасывает к нему запросы.
 	vite: {
-		server: { proxy: { '/api': 'http://localhost:8787' } },
+		// API_PORT -- когда 8787 занят вторым checkout'ом того же проекта.
+		server: { proxy: { '/api': `http://localhost:${process.env.API_PORT || 8787}` } },
 	},
 	// Astro кладёт в `<meta>` страницы CSP с хешами своих скриптов и стилей.
 	// `frame-ancestors` в `<meta>` не работает, встраивание в Telegram разрешает Caddy.
