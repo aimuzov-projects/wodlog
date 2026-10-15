@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ScreenTitle from '#frontend/components/screen-title.svelte'
 	import { untrack } from 'svelte'
 
 	import Icon from '#frontend/components/icon.svelte'
@@ -87,7 +88,7 @@
 	}}
 >
 	<header class="editor__header">
-		<h1 class="editor__title">Тренировка</h1>
+		<ScreenTitle text="Тренировка" />
 		<span class="muted">{humanDate(date)}</span>
 	</header>
 
@@ -268,11 +269,6 @@
 			display: flex;
 			gap: 12px;
 			align-items: baseline;
-		}
-
-		&__title {
-			font-size: 1.6rem;
-			font-weight: 800;
 		}
 
 		&__part {

@@ -1,17 +1,17 @@
 <script lang="ts">
+	import ScreenTitle from '#frontend/components/screen-title.svelte'
 	import Icon from '#frontend/components/icon.svelte'
 	import { confirmAction, haptic } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
 	import { timer } from '#frontend/state/timer.svelte.ts'
-	import { formatClock, totalMs, type TimerConfig } from '#shared/timer.ts'
+	import type { TimerConfig } from '#shared/timer.ts'
 
-	type Preset = 'for_time' | 'amrap' | 'emom' | 'tabata' | 'intervals'
+	type Preset = 'for_time' | 'amrap' | 'emom' | 'intervals'
 
 	const LABELS: Record<Preset, string> = {
 		for_time: 'For Time',
 		amrap: 'AMRAP',
 		emom: 'EMOM',
-		tabata: 'Tabata',
 		intervals: 'Интервалы',
 	}
 	const STORAGE_KEY = 'wodlog.timer'
@@ -25,7 +25,8 @@
 		}
 	})()
 
-	let preset = $state<Preset>(saved.preset ?? 'amrap')
+	// Сохранённый пресет мог быть убранной Tabata.
+	let preset = $state<Preset>(saved.preset in LABELS ? saved.preset : 'amrap')
 	let capMin = $state<number>(saved.capMin ?? 0)
 	let amrapMin = $state<number>(saved.amrapMin ?? 12)
 	let emomSec = $state<number>(saved.emomSec ?? 60)
@@ -42,8 +43,6 @@
 				return { mode: 'amrap', durationSec: Math.max(1, amrapMin) * 60 }
 			case 'emom':
 				return { mode: 'emom', intervalSec: Math.max(5, emomSec), rounds: Math.max(1, emomRounds) }
-			case 'tabata':
-				return { mode: 'intervals', workSec: 20, restSec: 10, rounds: 8 }
 			case 'intervals':
 				return {
 					mode: 'intervals',
@@ -53,7 +52,6 @@
 				}
 		}
 	})
-	const total = $derived(totalMs(config))
 
 	async function start() {
 		if (timer.session && !timer.finished && !(await confirmAction('Другой таймер ещё идёт. Запустить новый?')))
@@ -92,9 +90,9 @@
 {/snippet}
 
 <section class="timer-setup">
-	<h1 class="timer-setup__title">Таймер</h1>
+	<ScreenTitle text="Таймер" />
 
-	<div class="chips">
+	<div class="chips timer-setup__presets">
 		{#each Object.entries(LABELS) as [id, label] (id)}
 			<button
 				class="chip"
@@ -116,18 +114,12 @@
 		{:else if preset === 'emom'}
 			{@render stepper('Интервал', emomSec, (v) => (emomSec = v), 15, 15, 'сек')}
 			{@render stepper('Раунды', emomRounds, (v) => (emomRounds = v), 1, 1, '')}
-		{:else if preset === 'tabata'}
-			<p>8 раундов: 20 секунд работы, 10 секунд отдыха.</p>
 		{:else}
 			{@render stepper('Работа', workSec, (v) => (workSec = v), 5, 5, 'сек')}
 			{@render stepper('Отдых', restSec, (v) => (restSec = v), 5, 0, 'сек')}
 			{@render stepper('Раунды', rounds, (v) => (rounds = v), 1, 1, '')}
 		{/if}
 	</div>
-
-	<p class="muted timer-setup__total">
-		{total === Infinity ? 'Без ограничения по времени' : `Всего ${formatClock(total)} + 10 секунд на подготовку`}
-	</p>
 
 	<button class="btn btn--primary btn--wide timer-setup__start" onclick={start}>
 		<Icon name="play" /> Старт
@@ -139,10 +131,9 @@
 		display: grid;
 		gap: 14px;
 
-		&__title {
-			font-family: var(--font-display);
-			font-size: 1.8rem;
-			font-weight: 800;
+		/* Режимов немного: пусть лучше перенесутся, чем уедут за край экрана. */
+		&__presets {
+			flex-wrap: wrap;
 		}
 
 		&__params {
@@ -179,8 +170,7 @@
 			color: var(--muted);
 		}
 
-		&__hint,
-		&__total {
+		&__hint {
 			font-size: 0.85rem;
 		}
 

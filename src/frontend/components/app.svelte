@@ -9,6 +9,7 @@
 	import Rating from '#frontend/components/rating.svelte'
 	import Icon from '#frontend/components/icon.svelte'
 	import MenuFab from '#frontend/components/menu-fab.svelte'
+	import TopBar from '#frontend/components/top-bar.svelte'
 	import TimerBar from '#frontend/components/timer-bar.svelte'
 	import TimerRun from '#frontend/components/timer-run.svelte'
 	import TimerSetup from '#frontend/components/timer-setup.svelte'
@@ -56,6 +57,7 @@
 			<TimerSetup />
 			<button class="btn btn--ghost btn--wide" onclick={() => app.start()}>Войти</button>
 		</main>
+		<TopBar />
 		<TimerBar />
 	{:else}
 		<main class="shell__main" use:swipe={backSwipe}>
@@ -87,6 +89,7 @@
 				<Today />
 			{/if}
 		</main>
+		<TopBar />
 		<TimerBar />
 		<!-- В редакторе внизу свои кнопки «Отмена» и «Сохранить». -->
 		{#if app.screen?.name !== 'editor'}<MenuFab />{/if}
