@@ -7,11 +7,13 @@
 	import { humanDate } from '#frontend/lib/format.ts'
 	import { haptic } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
+	import Stepper from '#frontend/components/stepper.svelte'
+	import { formatClock } from '#shared/timer.ts'
 	import {
 		EQUIPMENT,
 		PART_KIND_LABELS,
-		PART_KINDS,
 		type Part,
+		type PartKind,
 		type Workout,
 		type WorkoutDraft,
 	} from '#shared/types.ts'
@@ -29,19 +31,30 @@
 		kind: 'amrap',
 		title: '',
 		description: '',
-		timeCapSec: null,
+		timeCapSec: 12 * 60,
 		intervalSec: null,
 		rounds: null,
 		movements: [],
 	})
 
-	// Время в форме -- в минутах, в данных -- в секундах.
-	const toMinutes = (sec: number | null) => (sec === null ? '' : String(Math.round((sec / 60) * 100) / 100))
-	const toSeconds = (value: string) => {
-		const minutes = Number.parseFloat(value.replace(',', '.'))
+	// Силовую не заводим: её результат -- вес, а не раунды и время, и в зале её не пишут.
+	const EDITOR_KINDS: PartKind[] = ['amrap', 'emom', 'for_time', 'other']
 
-		return Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes * 60) : null
+	// Время в форме -- в минутах, в данных -- в секундах.
+	const minutes = (sec: number | null) => (sec ? Math.round(sec / 60) : 0)
+
+	/** Меняет формат и подставляет обычные для него значения, если их ещё нет. */
+	function setKind(part: Part, kind: PartKind) {
+		part.kind = kind
+
+		if (kind === 'amrap') part.timeCapSec ??= 12 * 60
+
+		if (kind === 'emom') {
+			part.intervalSec ??= 60
+			part.rounds ??= 10
+		}
 	}
+
 	const toNumber = (value: string) => {
 		const n = Number.parseFloat(value.replace(',', '.'))
 
@@ -101,59 +114,51 @@
 		<fieldset class="card editor__part">
 			<legend class="editor__legend">Комплекс {i + 1}</legend>
 
-			<div class="chips" role="radiogroup" aria-label="Формат">
-				{#each PART_KINDS as kind (kind)}
+			<div class="chips editor__kinds" role="radiogroup" aria-label="Формат">
+				{#each EDITOR_KINDS as kind (kind)}
 					<button
 						type="button"
 						class="chip"
 						class:chip--active={part.kind === kind}
 						role="radio"
 						aria-checked={part.kind === kind}
-						onclick={() => (part.kind = kind)}>{PART_KIND_LABELS[kind]}</button
+						onclick={() => setKind(part, kind)}>{PART_KIND_LABELS[kind]}</button
 					>
 				{/each}
 			</div>
 
-			<label class="field">
-				<span class="field__label">Заголовок</span>
-				<input class="field__input" bind:value={part.title} placeholder="AMRAP 12'" />
-			</label>
-
-			<div class="editor__row">
-				{#if part.kind === 'amrap' || part.kind === 'for_time'}
-					<label class="field">
-						<span class="field__label">{part.kind === 'amrap' ? 'Время, мин' : 'Кап, мин'}</span>
-						<input
-							class="field__input"
-							inputmode="decimal"
-							value={toMinutes(part.timeCapSec)}
-							oninput={(e) => (part.timeCapSec = toSeconds(e.currentTarget.value))}
-						/>
-					</label>
-				{/if}
-				{#if part.kind === 'emom'}
-					<label class="field">
-						<span class="field__label">Интервал, мин</span>
-						<input
-							class="field__input"
-							inputmode="decimal"
-							value={toMinutes(part.intervalSec)}
-							oninput={(e) => (part.intervalSec = toSeconds(e.currentTarget.value))}
-						/>
-					</label>
-				{/if}
-				{#if part.kind !== 'amrap'}
-					<label class="field">
-						<span class="field__label">{part.kind === 'emom' ? 'Раундов' : 'Раундов / подходов'}</span>
-						<input
-							class="field__input"
-							inputmode="numeric"
-							value={part.rounds ?? ''}
-							oninput={(e) => (part.rounds = toNumber(e.currentTarget.value))}
-						/>
-					</label>
-				{/if}
-			</div>
+			{#if part.kind === 'amrap' || part.kind === 'for_time'}
+				<Stepper
+					compact
+					label={part.kind === 'amrap' ? 'Время' : 'Кап'}
+					value={minutes(part.timeCapSec)}
+					onchange={(v) => (part.timeCapSec = v ? v * 60 : null)}
+					min={part.kind === 'amrap' ? 1 : 0}
+					format={(v) => (v || part.kind === 'amrap' ? String(v) : 'нет')}
+					unit={minutes(part.timeCapSec) || part.kind === 'amrap' ? 'мин' : ''}
+				/>
+			{/if}
+			{#if part.kind === 'emom'}
+				<Stepper
+					compact
+					label="Интервал"
+					value={part.intervalSec ?? 60}
+					onchange={(v) => (part.intervalSec = v)}
+					step={15}
+					min={15}
+					format={(v) => formatClock(v * 1000).replace(/^0/, '')}
+				/>
+			{/if}
+			{#if part.kind === 'emom' || part.kind === 'for_time' || part.kind === 'other'}
+				<Stepper
+					compact
+					label={part.kind === 'emom' ? 'Раунды' : 'Раунды или подходы'}
+					value={part.rounds ?? 0}
+					onchange={(v) => (part.rounds = v || null)}
+					min={part.kind === 'emom' ? 1 : 0}
+					format={(v) => (v ? String(v) : '—')}
+				/>
+			{/if}
 
 			<div class="editor__movements">
 				<span class="field__label">Движения</span>
@@ -216,11 +221,6 @@
 					<Icon name="plus" size={18} /> Движение
 				</button>
 			</div>
-
-			<label class="field">
-				<span class="field__label">Заметки</span>
-				<textarea class="field__input field__textarea" bind:value={part.description} rows="2"></textarea>
-			</label>
 
 			<div class="editor__part-tools">
 				<button
@@ -285,10 +285,8 @@
 			font-weight: 800;
 		}
 
-		&__row {
-			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-			gap: 10px;
+		&__kinds {
+			flex-wrap: wrap;
 		}
 
 		&__movements {
