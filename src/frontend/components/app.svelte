@@ -15,10 +15,18 @@
 	import Today from '#frontend/components/today.svelte'
 	import WorkoutEditor from '#frontend/components/workout-editor.svelte'
 	import { registerServiceWorker } from '#frontend/lib/pwa.ts'
+	import { swipe } from '#frontend/lib/swipe.ts'
 	import { initTelegram, insideTelegram } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
 
 	let { botUsername }: { botUsername: string } = $props()
+
+	// Свайп вправо на вложенном экране -- назад, как в iOS. В редакторе нет: так легко потерять правки.
+	const backSwipe = $derived({
+		enabled: Boolean(app.screen) && app.screen?.name !== 'editor',
+		onswipe: () => app.back(),
+		allowed: (direction: 'left' | 'right') => direction === 'right',
+	})
 
 	onMount(() => {
 		initTelegram()
@@ -50,7 +58,7 @@
 		</main>
 		<TimerBar />
 	{:else}
-		<main class="shell__main">
+		<main class="shell__main" use:swipe={backSwipe}>
 			<!-- В Telegram «Назад» системная, в браузере своя. -->
 			{#if app.screen && !insideTelegram()}
 				<button class="btn btn--small btn--ghost shell__back" onclick={() => app.back()}>
@@ -95,7 +103,13 @@
 
 		/* Снизу место под кнопку меню и плашку таймера, они висят поверх в одном ряду. */
 		&__main {
+			transform: translateX(var(--swipe-dx, 0));
 			padding: calc(var(--safe-top) + 12px) var(--gutter) calc(var(--fab-size) + var(--safe-bottom) + 40px);
+			transition: transform 0.2s ease;
+		}
+
+		&__main:global([data-swiping]) {
+			transition: none;
 		}
 
 		&__main--bare {
