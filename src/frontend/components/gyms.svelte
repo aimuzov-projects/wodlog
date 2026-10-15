@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ScreenTitle from '#frontend/components/screen-title.svelte'
 	import GymSetup from '#frontend/components/gym-setup.svelte'
 	import Icon from '#frontend/components/icon.svelte'
 	import { plural } from '#frontend/lib/format.ts'
@@ -48,7 +49,7 @@
 </script>
 
 <section class="gyms">
-	<h1 class="gyms__title">Залы</h1>
+	<ScreenTitle text="Залы" />
 
 	{#each app.gyms as gym (gym.id)}
 		<div class="card gyms__item" class:gyms__item--current={gym.id === app.gym?.id}>
@@ -77,11 +78,6 @@
 	.gyms {
 		display: grid;
 		gap: 10px;
-
-		&__title {
-			font-size: 1.8rem;
-			font-weight: 800;
-		}
 
 		&__item {
 			display: grid;

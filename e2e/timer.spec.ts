@@ -1,11 +1,17 @@
 import { expect, test } from '@playwright/test'
 
 // Таймер работает без входа и без API: e2e-сборка поднимает только статику.
-test('Tabata timer runs through prep, work and rest', async ({ page }) => {
+test('interval timer runs through prep, work and rest', async ({ page }) => {
 	await page.clock.install()
 	await page.goto('/')
 	await page.getByRole('button', { name: 'Просто открыть таймер' }).click()
-	await page.getByRole('button', { name: 'Tabata' }).click()
+	await page.getByRole('button', { name: 'Интервалы' }).click()
+
+	// По умолчанию 40/20, сводим к 20 работы и 10 отдыха.
+	for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Работа: меньше' }).click()
+
+	for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Отдых: меньше' }).click()
+
 	await page.getByRole('button', { name: 'Старт' }).click()
 
 	const phase = page.locator('.timer-run__phase')
@@ -37,7 +43,7 @@ test('Tabata timer runs through prep, work and rest', async ({ page }) => {
 
 	const bar = page.locator('.timer-bar')
 
-	await expect(bar).toContainText('Tabata')
+	await expect(bar).toContainText('Интервалы')
 
 	// И даже перезагрузку переживает: время считается по часам и лежит в localStorage.
 	await page.reload()

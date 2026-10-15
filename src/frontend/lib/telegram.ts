@@ -23,6 +23,8 @@ export type WebApp = {
 	ready(): void
 	expand(): void
 	requestFullscreen?(): void
+	isFullscreen?: boolean
+	onEvent?(event: string, handler: () => void): void
 	disableVerticalSwipes?(): void
 	setHeaderColor?(color: string): void
 	setBackgroundColor?(color: string): void
@@ -70,6 +72,13 @@ export function initTelegram() {
 	}
 
 	document.documentElement.dataset.telegram = app.platform
+
+	// В полноэкранном режиме верхнюю полосу занимают кнопки Telegram, а заголовок экрана
+	// встаёт между ними (см. components/screen-title.svelte).
+	const syncFullscreen = () => document.documentElement.toggleAttribute('data-fullscreen', Boolean(app.isFullscreen))
+
+	syncFullscreen()
+	app.onEvent?.('fullscreenChanged', syncFullscreen)
 }
 
 export function haptic(kind: HapticStyle | 'success' | 'error' | 'warning' | 'select' = 'light') {

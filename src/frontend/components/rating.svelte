@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ScreenTitle from '#frontend/components/screen-title.svelte'
 	import Avatar from '#frontend/components/avatar.svelte'
 	import Icon from '#frontend/components/icon.svelte'
 	import { api } from '#frontend/lib/api.ts'
@@ -31,7 +32,7 @@
 </script>
 
 <section class="rating">
-	<h1 class="rating__title">Рейтинг</h1>
+	<ScreenTitle text="Рейтинг" />
 	<p class="muted">{app.gym?.name}</p>
 
 	<div class="chips">
@@ -88,12 +89,6 @@
 	.rating {
 		display: grid;
 		gap: 12px;
-
-		&__title {
-			font-family: var(--font-display);
-			font-size: 1.8rem;
-			font-weight: 800;
-		}
 
 		&__note {
 			display: flex;
