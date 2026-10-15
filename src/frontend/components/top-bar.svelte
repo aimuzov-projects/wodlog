@@ -1,26 +1,36 @@
 <script lang="ts">
 	import { app } from '#frontend/state/app.svelte.ts'
+	import { PART_KIND_LABELS } from '#shared/types.ts'
 
-	// У главного экрана своя шапка с датой, у комплекса заголовок в карточке.
-	const TITLES: Partial<Record<string, string>> = {
+	const TITLES: Record<string, string> = {
 		'timer-setup': 'Таймер',
 		rating: 'Рейтинг',
+		profile: 'Профиль',
 		gyms: 'Залы',
 		editor: 'Тренировка',
 	}
 
-	// Без входа доступен только таймер.
-	const title = $derived(app.screen ? TITLES[app.screen.name] : app.status === 'timer' ? 'Таймер' : undefined)
+	const title = $derived.by(() => {
+		const screen = app.screen
+
+		if (screen?.name === 'part') return screen.part.title || PART_KIND_LABELS[screen.part.kind]
+
+		if (screen) return TITLES[screen.name] ?? ''
+
+		// Без входа доступен только таймер.
+		if (app.status === 'timer') return 'Таймер'
+
+		return app.gym ? 'Тренировка' : 'Ваш зал'
+	})
 </script>
 
 <!--
-	Заголовок в верхней полосе полноэкранного Telegram, между его кнопками «Назад» и «⌄ •••»,
-	как в нативных приложениях. Вне полноэкранного режима полосы нет, заголовок остаётся на экране.
+	Верхняя полоса полноэкранного Telegram: заголовок между его кнопками «Назад» и «⌄ •••», как
+	в нативных приложениях, а под размытием видно, что контент уходит наверх, а не обрезается.
+	Вне полноэкранного режима полосы нет, заголовок остаётся на экране.
 	Лежит вне main: у того transform для свайпа, и fixed внутри него не держался бы у края.
 -->
-{#if title}
-	<div class="top-bar">{title}</div>
-{/if}
+<div class="top-bar">{title}</div>
 
 <style>
 	.top-bar {
@@ -42,7 +52,10 @@
 			font-weight: 700;
 			text-overflow: ellipsis;
 			white-space: nowrap;
-			background: var(--bg);
+			background: color-mix(in srgb, var(--bg) 72%, transparent);
+			/* Без префикса Safari умеет только с iOS 18. */
+			-webkit-backdrop-filter: blur(20px) saturate(1.4);
+			backdrop-filter: blur(20px) saturate(1.4);
 		}
 	}
 </style>

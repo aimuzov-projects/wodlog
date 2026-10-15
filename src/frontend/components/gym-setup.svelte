@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ScreenTitle from '#frontend/components/screen-title.svelte'
 	import { haptic } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
 
@@ -28,7 +29,7 @@
 
 <section class="gym-setup">
 	{#if !compact}
-		<h1 class="gym-setup__title">Ваш зал</h1>
+		<ScreenTitle text="Ваш зал" />
 		<p class="muted">
 			Тренировка дня и рейтинг общие для зала. Попросите у знакомых приглашение или заведите зал сами.
 		</p>
@@ -67,11 +68,6 @@
 	.gym-setup {
 		display: grid;
 		gap: 12px;
-
-		&__title {
-			font-size: 1.8rem;
-			font-weight: 800;
-		}
 
 		&__form {
 			display: grid;
