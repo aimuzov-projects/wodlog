@@ -10,6 +10,7 @@ import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 
+import { avatarVersion } from '#backend/avatars.ts'
 import { rank, standings } from '#shared/scoring.ts'
 import type {
 	Gym,
@@ -130,11 +131,17 @@ const INVITE_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789'
 
 const inviteCode = () => [...randomBytes(8)].map((b) => INVITE_ALPHABET[b % INVITE_ALPHABET.length]).join('')
 
-const brief = (row: Row, prefix = ''): UserBrief => ({
-	id: Number(row[`${prefix}id`]),
-	name: [row[`${prefix}first_name`], row[`${prefix}last_name`]].filter(Boolean).join(' '),
-	photoUrl: (row[`${prefix}photo_url`] as string | null) ?? null,
-})
+const brief = (row: Row, prefix = ''): UserBrief => {
+	const id = Number(row[`${prefix}id`])
+	const photo = (row[`${prefix}photo_url`] as string | null) ?? null
+
+	return {
+		id,
+		name: [row[`${prefix}first_name`], row[`${prefix}last_name`]].filter(Boolean).join(' '),
+		// Через свой домен, см. avatars.ts. Версия в адресе сбрасывает кэш браузера при смене фото.
+		photoUrl: photo ? `/api/avatars/${id}?v=${avatarVersion(photo)}` : null,
+	}
+}
 
 function partFromRow(row: Row): Part {
 	return {
@@ -245,6 +252,13 @@ export class Db {
 					username = excluded.username, photo_url = COALESCE(excluded.photo_url, users.photo_url)`,
 			)
 			.run(user.id, user.first_name, user.last_name ?? null, user.username ?? null, user.photo_url ?? null, now())
+	}
+
+	/** Исходный адрес аватарки Telegram, его скачивает AvatarCache. */
+	photoUrl(userId: number): string | null {
+		const row = this.sql.prepare('SELECT photo_url FROM users WHERE id = ?').get(userId)
+
+		return (row?.photo_url as string | null) ?? null
 	}
 
 	me(userId: number): Me | null {

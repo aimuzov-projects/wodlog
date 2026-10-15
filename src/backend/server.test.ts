@@ -19,6 +19,8 @@ const DAY = '2026-10-15'
 let server: Server
 let base: string
 
+const downloads: string[] = []
+
 before(async () => {
 	const recognize = async () => ({
 		draft: {
@@ -47,6 +49,11 @@ before(async () => {
 			devLogin: true,
 		},
 		recognize,
+		async (url) => {
+			downloads.push(url)
+
+			return { type: 'image/svg+xml', body: Buffer.from('<svg/>') }
+		},
 	)
 
 	server = createServer(app)
@@ -248,6 +255,31 @@ test('RX result takes weights from the board by the profile setting', async () =
 	)
 
 	assert.deepEqual(scaled.mine.load, [{ movement: 'Snatch', weight: 30, equipment: 'Гантели' }])
+})
+
+test('serves Telegram avatars from its own domain and caches them', async () => {
+	const photo = 'https://t.me/i/userpic/320/abc.svg'
+
+	db.upsertUser({ id: 20, first_name: 'Pic', photo_url: photo })
+	db.upsertUser({ id: 21, first_name: 'Evil', photo_url: 'https://evil.test/x.svg' })
+
+	const me = db.me(20)!
+
+	assert.match(me.photoUrl!, /^\/api\/avatars\/20\?v=[0-9a-f]{12}$/)
+
+	for (let i = 0; i < 2; i++) {
+		const response = await fetch(base + me.photoUrl)
+
+		assert.equal(response.status, 200)
+		assert.equal(response.headers.get('content-type'), 'image/svg+xml')
+		assert.match(response.headers.get('content-security-policy')!, /sandbox/)
+		assert.equal(await response.text(), '<svg/>')
+	}
+
+	// Второй запрос взят с диска.
+	assert.deepEqual(downloads, [photo])
+	assert.equal((await fetch(`${base}/api/avatars/21`)).status, 404)
+	assert.equal((await fetch(`${base}/api/avatars/999`)).status, 404)
 })
 
 test('period start: week from Monday, month from the 1st', () => {

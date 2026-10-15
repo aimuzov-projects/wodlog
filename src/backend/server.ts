@@ -11,6 +11,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { join } from 'node:path'
 
 import { verifyInitData, verifyLoginWidget } from '#backend/auth.ts'
+import { AvatarCache, download, isTelegramImage, type Download, type Image } from '#backend/avatars.ts'
 import { Db, type TelegramUser } from '#backend/db.ts'
 import { DEFAULT_MODEL, openRouterRecognizer, RecognizeError, type Recognizer } from '#backend/recognize.ts'
 import { botApi, runBot } from '#backend/telegram.ts'
@@ -33,7 +34,7 @@ export type Settings = {
 }
 
 type Json = [status: number, body: unknown]
-type Raw = { status: number; type: string; body: Buffer }
+type Raw = { status: number; type: string; body: Buffer; headers?: Record<string, string> }
 type Reply = Json | Raw
 
 type Context = {
@@ -100,7 +101,9 @@ function date(value: string) {
 	return value
 }
 
-export function createApp(db: Db, settings: Settings, recognize: Recognizer | null) {
+export function createApp(db: Db, settings: Settings, recognize: Recognizer | null, fetchImage: Download = download) {
+	const avatars = new AvatarCache(join(settings.dataDir, 'avatars'), fetchImage)
+
 	const photos = join(settings.dataDir, 'photos')
 	const recognitions = new Map<string, number>()
 
@@ -136,6 +139,38 @@ export function createApp(db: Db, settings: Settings, recognize: Recognizer | nu
 
 	const routes: [method: string, pattern: RegExp, handler: (ctx: Context) => Promise<Reply> | Reply][] = [
 		['GET', /^\/api\/health$/, () => [200, { ok: true }]],
+
+		// Без входа: `<img>` не умеет слать токен, а аватарка и так видна всем в Telegram.
+		[
+			'GET',
+			/^\/api\/avatars\/(\d+)$/,
+			async ({ params }) => {
+				const photoUrl = db.photoUrl(Number(params[0]))
+
+				if (!photoUrl || !isTelegramImage(photoUrl)) throw new HttpError(404, 'Аватарки нет')
+
+				let image: Image
+
+				try {
+					image = await avatars.get(photoUrl)
+				} catch (error) {
+					console.error('avatar', (error as Error).message)
+
+					throw new HttpError(502, 'Telegram не отдал аватарку')
+				}
+
+				return {
+					status: 200,
+					...image,
+					headers: {
+						// Адрес с версией фото, поэтому кэшировать можно надолго.
+						'cache-control': 'public, max-age=604800, immutable',
+						// Аватарки бывают SVG: открытые напрямую, они не должны исполнять скрипты.
+						'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+					},
+				}
+			},
+		],
 
 		[
 			'POST',
@@ -423,7 +458,12 @@ export function createApp(db: Db, settings: Settings, recognize: Recognizer | nu
 
 			response.end(JSON.stringify(reply[1]))
 		} else {
-			response.writeHead(reply.status, { 'content-type': reply.type, 'cache-control': 'private, max-age=86400' })
+			response.writeHead(reply.status, {
+				'content-type': reply.type,
+				'cache-control': 'private, max-age=86400',
+				...reply.headers,
+			})
+
 			response.end(reply.body)
 		}
 	}
