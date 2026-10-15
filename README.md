@@ -5,20 +5,20 @@
 
 <!-- Uncomment once .github/assets/banner.en.jpg is in place.
 <p align="center">
-	<a href="https://__DOMAIN__"><img src=".github/assets/banner.en.jpg" alt="__NAME__: __DESCRIPTION_EN__" width="100%"></a>
+	<a href="https://wodlog.aimuzov.online"><img src=".github/assets/banner.en.jpg" alt="WODlog: WODlog keeps the workout of the day from the board, personal results, the gym leaderboard and a timer for CrossFit" width="100%"></a>
 </p>
 -->
 
 <p align="center">
-	<a href="https://github.com/aimuzov-projects/__PROJECT__/actions/workflows/deploy.yml"><img src="https://img.shields.io/github/actions/workflow/status/aimuzov-projects/__PROJECT__/deploy.yml?branch=main&label=deploy" alt="Deploy"></a>
-	<a href="https://__DOMAIN__"><img src="https://img.shields.io/website?url=https%3A%2F%2F__DOMAIN__&label=site" alt="Site status"></a>
-	<a href="package.json"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Faimuzov-projects%2F__PROJECT__%2Fmain%2Fpackage.json&query=%24.engines.node&label=node&logo=nodedotjs&logoColor=white&color=5fa04e" alt="Node"></a>
-	<a href="https://astro.build"><img src="https://img.shields.io/github/package-json/dependency-version/aimuzov-projects/__PROJECT__/astro?logo=astro&logoColor=white&color=bc52ee" alt="Astro"></a>
-	<a href="https://svelte.dev"><img src="https://img.shields.io/github/package-json/dependency-version/aimuzov-projects/__PROJECT__/svelte?logo=svelte&logoColor=white&color=ff3e00" alt="Svelte"></a>
-	<a href="LICENSE"><img src="https://img.shields.io/github/license/aimuzov-projects/__PROJECT__" alt="License"></a>
+	<a href="https://github.com/aimuzov-projects/wodlog/actions/workflows/deploy.yml"><img src="https://img.shields.io/github/actions/workflow/status/aimuzov-projects/wodlog/deploy.yml?branch=main&label=deploy" alt="Deploy"></a>
+	<a href="https://wodlog.aimuzov.online"><img src="https://img.shields.io/website?url=https%3A%2F%2Fwodlog.aimuzov.online&label=site" alt="Site status"></a>
+	<a href="package.json"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Faimuzov-projects%2Fwodlog%2Fmain%2Fpackage.json&query=%24.engines.node&label=node&logo=nodedotjs&logoColor=white&color=5fa04e" alt="Node"></a>
+	<a href="https://astro.build"><img src="https://img.shields.io/github/package-json/dependency-version/aimuzov-projects/wodlog/astro?logo=astro&logoColor=white&color=bc52ee" alt="Astro"></a>
+	<a href="https://svelte.dev"><img src="https://img.shields.io/github/package-json/dependency-version/aimuzov-projects/wodlog/svelte?logo=svelte&logoColor=white&color=ff3e00" alt="Svelte"></a>
+	<a href="LICENSE"><img src="https://img.shields.io/github/license/aimuzov-projects/wodlog" alt="License"></a>
 </p>
 
-<h3 align="center">__DESCRIPTION_EN__</h3>
+<h3 align="center">WODlog keeps the workout of the day from the board, personal results, the gym leaderboard and a timer for CrossFit</h3>
 
 <!-- Uncomment once the screenshots are in .github/assets.
 <table>
@@ -29,7 +29,7 @@
 </table>
 -->
 
-<p>Lives at <a href="https://__DOMAIN__">__DOMAIN__</a>. A static <a href="https://astro.build">Astro</a> site, interactive islands are written in <a href="https://svelte.dev">Svelte</a>.</p>
+<p>Lives at <a href="https://wodlog.aimuzov.online">wodlog.aimuzov.online</a>. A static <a href="https://astro.build">Astro</a> site, interactive islands are written in <a href="https://svelte.dev">Svelte</a>.</p>
 
 The site is in Russian, so the names below are translated.
 
@@ -38,7 +38,6 @@ The site is in Russian, so the names below are translated.
 - **Home** (`/`): the site name and description from [`src/frontend/data/site.ts`](src/frontend/data/site.ts).
 - **404**: a "no such page" stub with a link home.
 - **Footer**: the author credit from [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit) with a link to the source code, `repo` in [`site.ts`](src/frontend/data/site.ts).
-- **Analytics**: Yandex Metrica, the counter component comes from [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit) and adds its own CSP sources; the counter number is `metrikaId` in [`site.ts`](src/frontend/data/site.ts).
 
 ## How it is built
 
@@ -67,7 +66,7 @@ Before committing, the same checks as in CI:
 npm run format:check && npm run lint:js && npm run lint:css && npm run check && npm test
 ```
 
-E2E tests in [`e2e`](e2e) build the site and open it in Chromium: every sitemap page answers without console errors and passes axe, the Metrika waits for the first interaction. The browser is installed once with `npx playwright install chromium`.
+E2E tests in [`e2e`](e2e) build the site and open it in Chromium: every sitemap page answers without console errors and passes axe. The browser is installed once with `npx playwright install chromium`.
 
 ```sh
 npm run test:e2e
@@ -84,12 +83,12 @@ Zoom as a whole is not turned off with `maximum-scale=1` or `user-scalable=no` i
 The build puts a CSP with hashes of Astro's scripts and styles into every page (the `security.csp` option in `astro.config.mjs`). `npm run dev` has no policy, so violations only show up after `npm run build && npm run preview` and in production.
 
 - No `style=""` attributes or handlers like `onclick`: styles go through classes and rules in `<style>`, handlers live in `<script>`.
-- An external script, image or request (a widget, a map, a font from a CDN) has to be allowed in `security.csp` first. Right now only Yandex Metrica is there.
+- An external script, image or request (a widget, a map, a font from a CDN) has to be allowed in `security.csp` first. Right now there are no external sources there.
 - After such changes, check the browser console in `npm run preview`: the browser reports everything it blocks there.
 
 ## Deployment
 
-The projects server from [infra-server](https://github.com/aimuzov-projects/infra-server): merging the release PR that release-please keeps open runs `deploy.yml`, which runs the checks and logs in over SSH. The steps of both come from [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit), which also holds the server address and its `known_hosts` line. There the key runs the shared [`deploy/site.sh`](https://github.com/aimuzov-projects/infra-server/blob/main/deploy/site.sh) of infra-server, which pulls `main` and rebuilds the `__PROJECT__` container (nginx with the static site) from [`deploy/docker-compose.yml`](deploy/docker-compose.yml). The domain and TLS are handled by the shared Caddy. `.env` lives on the server in `/srv/__PROJECT__`.
+The projects server from [infra-server](https://github.com/aimuzov-projects/infra-server): merging the release PR that release-please keeps open runs `deploy.yml`, which runs the checks and logs in over SSH. The steps of both come from [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit), which also holds the server address and its `known_hosts` line. There the key runs the shared [`deploy/site.sh`](https://github.com/aimuzov-projects/infra-server/blob/main/deploy/site.sh) of infra-server, which pulls `main` and rebuilds the `wodlog` container (nginx with the static site) from [`deploy/docker-compose.yml`](deploy/docker-compose.yml). The domain and TLS are handled by the shared Caddy. `.env` lives on the server in `/srv/wodlog`.
 
 The deploy job runs only when the repository variable `DEPLOY_ENABLED` is `true`, so until the server is set up, a release only runs the checks.
 
