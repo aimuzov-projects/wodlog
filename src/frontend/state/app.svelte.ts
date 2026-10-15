@@ -15,7 +15,7 @@ import type { Gym, Me, Part, Workout, WorkoutDraft } from '#shared/types.ts'
 export type Tab = 'today' | 'timer' | 'rating' | 'profile'
 
 export type Screen =
-	| { name: 'editor'; date: string; draft: WorkoutDraft; photo: string | null }
+	| { name: 'editor'; date: string; draft: WorkoutDraft }
 	| { name: 'part'; part: Part; date: string; prefill?: TimerResult }
 	/** Сам таймер живёт в `state/timer.svelte.ts`, экран только показывает его. */
 	| { name: 'timer' }

@@ -1,17 +1,11 @@
 <script lang="ts">
 	import Icon from '#frontend/components/icon.svelte'
 	import PartCard from '#frontend/components/part-card.svelte'
-	import { api, apiImage } from '#frontend/lib/api.ts'
 	import { humanDate, localDate, shiftDate } from '#frontend/lib/format.ts'
-	import { compressPhoto } from '#frontend/lib/image.ts'
-	import { confirmAction, haptic } from '#frontend/lib/telegram.ts'
+	import { haptic } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
-	import type { Workout, WorkoutDraft } from '#shared/types.ts'
 
 	let loading = $state(false)
-	let recognizing = $state(false)
-	let photoUrl = $state<string | null>(null)
-	let fileInput: HTMLInputElement
 
 	const today = localDate()
 	const workout = $derived(app.workout)
@@ -20,7 +14,6 @@
 		// Перезагружаем при смене зала или даты.
 		void app.gym?.id
 		void app.date
-		photoUrl = null
 		loading = true
 
 		app.loadWorkout()
@@ -33,64 +26,12 @@
 		app.date = shiftDate(app.date, days)
 	}
 
-	/** Сохраняет id комплексов, совпавших по порядку и формату, чтобы пересъёмка не стёрла результаты. */
-	function keepIds(draft: WorkoutDraft, current: Workout | null | undefined): WorkoutDraft {
-		if (!current) return draft
-
-		return {
-			...draft,
-			parts: draft.parts.map((part, i) =>
-				current.parts[i]?.kind === part.kind ? { ...part, id: current.parts[i].id } : part,
-			),
-		}
-	}
-
-	async function onPhoto(event: Event) {
-		const file = (event.currentTarget as HTMLInputElement).files?.[0]
-
-		;(event.currentTarget as HTMLInputElement).value = ''
-
-		if (!file || !app.gym) return
-
-		recognizing = true
-
-		try {
-			const image = await compressPhoto(file)
-			const { draft } = await api<{ draft: WorkoutDraft }>(
-				'POST',
-				`/api/gyms/${app.gym.id}/workouts/${app.date}/recognize`,
-				{ image },
-			)
-
-			haptic('success')
-			app.open({ name: 'editor', date: app.date, draft: keepIds(draft, workout), photo: image })
-		} catch (error) {
-			haptic('error')
-			app.notify((error as Error).message, true)
-		} finally {
-			recognizing = false
-		}
-	}
-
-	async function snap() {
-		if (workout && !(await confirmAction('Тренировка на этот день уже есть. Распознать доску заново?'))) return
-
-		fileInput.click()
-	}
-
-	function manual() {
+	function edit() {
 		app.open({
 			name: 'editor',
 			date: app.date,
 			draft: workout ? { warmup: workout.warmup, parts: workout.parts } : { warmup: '', parts: [] },
-			photo: null,
 		})
-	}
-
-	async function showPhoto() {
-		if (!app.gym) return
-
-		photoUrl = await apiImage(`/api/gyms/${app.gym.id}/workouts/${app.date}/photo`)
 	}
 </script>
 
@@ -127,32 +68,15 @@
 		</div>
 	</header>
 
-	<input
-		class="visually-hidden"
-		type="file"
-		accept="image/*"
-		capture="environment"
-		tabindex="-1"
-		aria-hidden="true"
-		bind:this={fileInput}
-		onchange={onPhoto}
-	/>
-
-	{#if recognizing}
-		<div class="card today__recognizing" aria-busy="true">
-			<div class="today__spinner"></div>
-			<p>Читаю доску… Обычно это 10–20 секунд.</p>
-		</div>
-	{:else if workout === undefined || (loading && !workout)}
+	{#if workout === undefined || (loading && !workout)}
 		<div class="card today__skeleton" aria-busy="true"></div>
 	{:else if workout === null}
 		<div class="card today__empty">
 			<p class="today__empty-title">На этот день тренировки ещё нет</p>
-			<p class="muted">Сфотографируйте доску: тренировка появится у всех в зале.</p>
-			<button class="btn btn--primary btn--wide" onclick={snap}>
-				<Icon name="camera" /> Сфоткать доску
+			<p class="muted">Перенесите её с доски: тренировка появится у всех в зале.</p>
+			<button class="btn btn--primary btn--wide" onclick={edit}>
+				<Icon name="plus" /> Добавить тренировку
 			</button>
-			<button class="btn btn--ghost" onclick={manual}>Ввести вручную</button>
 		</div>
 	{:else}
 		{#if workout.warmup}
@@ -166,21 +90,11 @@
 		{/each}
 
 		<div class="today__tools">
-			<button class="btn btn--small" onclick={manual}><Icon name="edit" size={18} /> Править</button>
-			<button class="btn btn--small" onclick={snap}><Icon name="camera" size={18} /> Переснять</button>
-			{#if workout.hasPhoto}
-				<button class="btn btn--small" onclick={showPhoto}><Icon name="image" size={18} /> Фото</button>
-			{/if}
+			<button class="btn btn--small" onclick={edit}><Icon name="edit" size={18} /> Править</button>
 		</div>
 
 		{#if workout.updatedBy}
 			<p class="today__author muted">Внёс {workout.updatedBy.name}</p>
-		{/if}
-
-		{#if photoUrl}
-			<button class="today__photo" onclick={() => (photoUrl = null)} aria-label="Закрыть фото">
-				<img class="today__photo-img" src={photoUrl} alt="Фото доски" />
-			</button>
 		{/if}
 	{/if}
 </section>
@@ -238,8 +152,7 @@
 			opacity: 0.6;
 		}
 
-		&__empty,
-		&__recognizing {
+		&__empty {
 			display: grid;
 			gap: 12px;
 			justify-items: center;
@@ -253,15 +166,6 @@
 			font-weight: 700;
 		}
 
-		&__spinner {
-			width: 40px;
-			height: 40px;
-			border: 4px solid var(--line);
-			border-top-color: var(--accent);
-			border-radius: 50%;
-			animation: spin 0.8s linear infinite;
-		}
-
 		&__tools {
 			display: flex;
 			flex-wrap: wrap;
@@ -272,28 +176,6 @@
 		&__author {
 			margin-top: 12px;
 			font-size: 0.85rem;
-		}
-
-		&__photo {
-			position: fixed;
-			z-index: 30;
-			inset: 0;
-			display: grid;
-			place-items: center;
-			padding: var(--safe-top) 0 var(--safe-bottom);
-			border: 0;
-			background: rgb(0 0 0 / 90%);
-		}
-
-		&__photo-img {
-			max-height: 100%;
-			object-fit: contain;
-		}
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(1turn);
 		}
 	}
 </style>

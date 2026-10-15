@@ -5,23 +5,18 @@
  * Caddy отдаёт сюда только `/api/*`.
  */
 
-import { existsSync } from 'node:fs'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { join } from 'node:path'
 
 import { verifyInitData, verifyLoginWidget } from '#backend/auth.ts'
 import { AvatarCache, download, isTelegramImage, type Download, type Image } from '#backend/avatars.ts'
 import { Db, type TelegramUser } from '#backend/db.ts'
-import { DEFAULT_MODEL, openRouterRecognizer, RecognizeError, type Recognizer } from '#backend/recognize.ts'
 import { botApi, runBot } from '#backend/telegram.ts'
 import type { RatingPeriod, RxWeights, Visibility } from '#shared/types.ts'
 import { InvalidInput, resultInput, text, withRxLoad, workoutDraft } from '#shared/workout.ts'
 
-// Фото доски приходит data URL внутри JSON, клиент ужимает его до ~1600 px.
-export const BODY_LIMIT = 10 * 1024 * 1024
-// Распознаваний в сутки на человека: каждое стоит денег на OpenRouter.
-const RECOGNIZE_PER_DAY = 30
+// Самое большое тело -- тренировка из редактора, это килобайты.
+export const BODY_LIMIT = 1024 * 1024
 
 export type Settings = {
 	botToken: string
@@ -88,7 +83,6 @@ export async function readJson(request: AsyncIterable<Buffer>, limit = BODY_LIMI
 }
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
-const IMAGE = /^data:image\/(jpeg|png|webp);base64,([a-z0-9+/=]+)$/i
 
 export function today(timeZone: string, at = new Date()) {
 	// en-CA форматирует дату как YYYY-MM-DD.
@@ -101,13 +95,8 @@ function date(value: string) {
 	return value
 }
 
-export function createApp(db: Db, settings: Settings, recognize: Recognizer | null, fetchImage: Download = download) {
+export function createApp(db: Db, settings: Settings, fetchImage: Download = download) {
 	const avatars = new AvatarCache(join(settings.dataDir, 'avatars'), fetchImage)
-
-	const photos = join(settings.dataDir, 'photos')
-	const recognitions = new Map<string, number>()
-
-	const photoPath = (gymId: number, day: string) => join(photos, `${gymId}-${day}.jpg`)
 
 	/** Проверяет членство в зале и возвращает его id. 404, а не 403: чужие залы не светим. */
 	function member(userId: number, raw: string) {
@@ -122,19 +111,6 @@ export function createApp(db: Db, settings: Settings, recognize: Recognizer | nu
 		db.upsertUser(user)
 
 		return { token: db.createSession(user.id), me: db.me(user.id), gyms: db.gyms(user.id) }
-	}
-
-	function countRecognition(userId: number) {
-		const key = `${userId}:${today(settings.timeZone)}`
-		const count = (recognitions.get(key) ?? 0) + 1
-
-		if (count > RECOGNIZE_PER_DAY)
-			throw new HttpError(429, 'На сегодня распознаваний хватит, введите тренировку вручную')
-
-		// Счётчики прошлых дней больше не нужны.
-		if (!recognitions.has(key)) recognitions.clear()
-
-		recognitions.set(key, count)
 	}
 
 	const routes: [method: string, pattern: RegExp, handler: (ctx: Context) => Promise<Reply> | Reply][] = [
@@ -307,47 +283,7 @@ export function createApp(db: Db, settings: Settings, recognize: Recognizer | nu
 
 				if (!draft.warmup && draft.parts.length === 0) throw new HttpError(400, 'Пустая тренировка')
 
-				return [200, db.saveWorkout(gymId, day, user(), draft, { hasPhoto: existsSync(photoPath(gymId, day)) })]
-			},
-		],
-
-		[
-			'POST',
-			/^\/api\/gyms\/(\d+)\/workouts\/([\d-]+)\/recognize$/,
-			async ({ user, params, body }) => {
-				const gymId = member(user(), params[0])
-				const day = date(params[1])
-
-				if (!recognize) throw new HttpError(503, 'Распознавание не настроено, введите тренировку вручную')
-
-				const image = text((await body()).image, BODY_LIMIT)
-				const match = image.match(IMAGE)
-
-				if (!match) throw new HttpError(400, 'Нужна фотография в JPEG, PNG или WebP')
-
-				countRecognition(user())
-
-				const { draft, raw } = await recognize(image)
-
-				// Фото храним только как подтверждение того, что было на доске, клиент всегда шлёт JPEG.
-				await mkdir(photos, { recursive: true })
-				await writeFile(photoPath(gymId, day), Buffer.from(match[2], 'base64'))
-
-				db.markPhoto(gymId, day, raw)
-
-				return [200, { draft }]
-			},
-		],
-
-		[
-			'GET',
-			/^\/api\/gyms\/(\d+)\/workouts\/([\d-]+)\/photo$/,
-			async ({ user, params }) => {
-				const path = photoPath(member(user(), params[0]), date(params[1]))
-
-				if (!existsSync(path)) throw new HttpError(404, 'Фото нет')
-
-				return { status: 200, type: 'image/jpeg', body: await readFile(path) }
+				return [200, db.saveWorkout(gymId, day, user(), draft)]
 			},
 		],
 
@@ -441,7 +377,7 @@ export function createApp(db: Db, settings: Settings, recognize: Recognizer | nu
 				body: () => readJson(request),
 			})
 		} catch (error) {
-			const known = error instanceof HttpError || error instanceof InvalidInput || error instanceof RecognizeError
+			const known = error instanceof HttpError || error instanceof InvalidInput
 
 			if (!known) console.error(error)
 
@@ -484,13 +420,10 @@ if (import.meta.main) {
 		timeZone: env.APP_TIMEZONE || 'Europe/Moscow',
 		devLogin: env.NODE_ENV !== 'production' && env.DEV_LOGIN === '1',
 	}
-	const recognize = env.OPENROUTER_API_KEY
-		? openRouterRecognizer({ apiKey: env.OPENROUTER_API_KEY, model: env.OPENROUTER_MODEL || DEFAULT_MODEL, appUrl })
-		: null
 	const db = new Db(join(dataDir, 'wodlog.db'))
 	const port = Number(env.PORT || 8787)
 
-	createServer(createApp(db, settings, recognize)).listen(port, () => console.log(`api: http://localhost:${port}`))
+	createServer(createApp(db, settings)).listen(port, () => console.log(`api: http://localhost:${port}`))
 
 	// Локально бот обычно не нужен: два процесса с одним токеном отбирали бы друг у друга апдейты.
 	if (env.BOT_POLLING !== '0') void runBot(botApi(env.BOT_TOKEN), appUrl)

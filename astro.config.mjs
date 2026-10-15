@@ -29,8 +29,8 @@ export default defineConfig({
 			scriptDirective: { resources: ["'self'", 'https://telegram.org'] },
 			directives: [
 				"default-src 'self'",
-				// Аватарки Telegram отдаёт с t.me, фото доски приходит через blob: и data:.
-				"img-src 'self' data: blob: https://t.me https://*.telegram.org",
+				// Аватарки отдаёт наш же API, см. src/backend/avatars.ts.
+				"img-src 'self' data:",
 				"connect-src 'self'",
 				// Окно Login Widget.
 				'frame-src https://oauth.telegram.org',

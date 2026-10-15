@@ -15,7 +15,7 @@
 		type WorkoutDraft,
 	} from '#shared/types.ts'
 
-	let { date, draft, photo }: { date: string; draft: WorkoutDraft; photo: string | null } = $props()
+	let { date, draft }: { date: string; draft: WorkoutDraft } = $props()
 
 	// Правим копию: черновик в стеке экранов остаётся нетронутым, если уйти без сохранения.
 	const initial = untrack(() => $state.snapshot(draft))
@@ -90,11 +90,6 @@
 		<h1 class="editor__title">Тренировка</h1>
 		<span class="muted">{humanDate(date)}</span>
 	</header>
-
-	{#if photo}
-		<img class="editor__photo" src={photo} alt="Снимок доски" />
-		<p class="muted editor__hint">Проверьте, что распознано верно: тренировку увидит весь зал.</p>
-	{/if}
 
 	<label class="field">
 		<span class="field__label">Разминка</span>
@@ -278,17 +273,6 @@
 		&__title {
 			font-size: 1.6rem;
 			font-weight: 800;
-		}
-
-		&__photo {
-			max-height: 260px;
-			border-radius: var(--radius);
-			object-fit: cover;
-		}
-
-		&__hint {
-			margin-top: -8px;
-			font-size: 0.85rem;
 		}
 
 		&__part {

@@ -22,23 +22,6 @@ let base: string
 const downloads: string[] = []
 
 before(async () => {
-	const recognize = async () => ({
-		draft: {
-			warmup: 'Run',
-			parts: [
-				{
-					kind: 'amrap' as const,
-					title: 'AMRAP 12',
-					description: '',
-					timeCapSec: 720,
-					intervalSec: null,
-					rounds: null,
-					movements: [],
-				},
-			],
-		},
-		raw: { ok: true },
-	})
 	const app = createApp(
 		db,
 		{
@@ -48,7 +31,6 @@ before(async () => {
 			timeZone: 'UTC',
 			devLogin: true,
 		},
-		recognize,
 		async (url) => {
 			downloads.push(url)
 
@@ -135,19 +117,17 @@ test('full flow: gym, workout of the day, results, rating, privacy', async () =>
 	// Чужой зал не виден.
 	assert.equal((await call('GET', `/api/gyms/${gym.id}/workouts/${DAY}`, undefined, eve))[0], 404)
 
-	// Bob распознаёт доску, сохраняет, Ann видит ту же тренировку.
-	const [, recognized] = await call<{ draft: Workout }>(
-		'POST',
-		`/api/gyms/${gym.id}/workouts/${DAY}/recognize`,
-		{ image: 'data:image/jpeg;base64,/9j/AA==' },
+	// Bob вносит тренировку дня, Ann видит ту же самую.
+	assert.equal((await call('PUT', `/api/gyms/${gym.id}/workouts/${DAY}`, { parts: [] }, bob))[0], 400)
+
+	const [, saved] = await call<Workout>(
+		'PUT',
+		`/api/gyms/${gym.id}/workouts/${DAY}`,
+		{ warmup: 'Run', parts: [{ kind: 'amrap', title: 'AMRAP 12', timeCapSec: 720, movements: [] }] },
 		bob,
 	)
 
-	assert.equal(recognized.draft.parts[0].kind, 'amrap')
-
-	const [, saved] = await call<Workout>('PUT', `/api/gyms/${gym.id}/workouts/${DAY}`, recognized.draft, bob)
-
-	assert.equal(saved.hasPhoto, true)
+	assert.equal(saved.parts[0].kind, 'amrap')
 
 	const [, loaded] = await call<{ workout: Workout; dates: string[] }>(
 		'GET',

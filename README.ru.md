@@ -33,7 +33,7 @@
 
 ## Что внутри
 
-- **Тренировка дня.** Одна на зал и дату. Кто-то фотографирует доску, OpenRouter распознаёт разминку и комплексы (AMRAP, EMOM, For Time, силовая), человек правит черновик, и тренировка появляется у всего зала. Править её может любой участник.
+- **Тренировка дня.** Одна на зал и дату. Кто-то переносит с доски разминку и комплексы (AMRAP, EMOM, For Time, силовая), и тренировка появляется у всего зала. Править её может любой участник.
 - **Результаты.** В каждом комплексе свой результат: RX или Scaled, раунды и повторы, время или кап, рабочий вес, а ещё вес и инвентарь по каждому движению.
 - **Рейтинг.** Лидерборд комплекса и сводная таблица зала за неделю, месяц и всё время: очко за участие плюс 10, 8, 6, 5, 4, 3, 2, 1 за места. Правила подсчёта — в [`src/shared/scoring.ts`](src/shared/scoring.ts).
 - **Открытый и закрытый профиль.** Закрытый ведёт статистику только для себя и в таблицы не попадает.
@@ -64,8 +64,6 @@ npm run api            # API на :8787
 npm run dev            # фронт, /api проксируется на API
 ```
 
-Без `OPENROUTER_API_KEY` распознавание отвечает 503 и тренировку вводят вручную.
-
 Перед коммитом — те же проверки, что в CI:
 
 ```sh
@@ -95,7 +93,7 @@ Safari на iPhone сам приближает страницу, когда вс
 
 ## Выкладка
 
-Сервер проектов из [infra-server](https://github.com/aimuzov-projects/infra-server): мерж релизного PR, который ведёт release-please, запускает `deploy.yml`, он гоняет проверки и заходит по SSH. Шаги обоих берутся из [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit), там же адрес сервера и его строка `known_hosts`. Там ключ запускает общий [`deploy/site.sh`](https://github.com/aimuzov-projects/infra-server/blob/main/deploy/site.sh) из infra-server, который подтягивает `main` и пересобирает контейнеры `wodlog` (nginx со статикой) и `wodlog-api` из [`deploy/docker-compose.yml`](deploy/docker-compose.yml). Домен и TLS держит общий Caddy, `/api/*` он отдаёт в `wodlog-api`. База и фото досок лежат в volume `wodlog-data`. В OpenRouter API ходит через `vpn:3128` из infra-server. `.env` лежит на сервере в `/srv/wodlog`, образец — [`.env.example`](.env.example).
+Сервер проектов из [infra-server](https://github.com/aimuzov-projects/infra-server): мерж релизного PR, который ведёт release-please, запускает `deploy.yml`, он гоняет проверки и заходит по SSH. Шаги обоих берутся из [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit), там же адрес сервера и его строка `known_hosts`. Там ключ запускает общий [`deploy/site.sh`](https://github.com/aimuzov-projects/infra-server/blob/main/deploy/site.sh) из infra-server, который подтягивает `main` и пересобирает контейнеры `wodlog` (nginx со статикой) и `wodlog-api` из [`deploy/docker-compose.yml`](deploy/docker-compose.yml). Домен и TLS держит общий Caddy, `/api/*` он отдаёт в `wodlog-api`. База и кэш аватарок лежат в volume `wodlog-data`. В Telegram API ходит через `vpn:3128` из infra-server. `.env` лежит на сервере в `/srv/wodlog`, образец — [`.env.example`](.env.example).
 
 ### Бот
 
