@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.8.0](https://github.com/aimuzov-projects/wodlog/compare/v1.7.0...v1.8.0) (2026-10-15)
+
+
+### Features
+
+* simpler part form with steppers ([#27](https://github.com/aimuzov-projects/wodlog/issues/27)) ([93e194e](https://github.com/aimuzov-projects/wodlog/commit/93e194e3d201ef687af49010641bb387109bf90b))
+* titles on every screen with a blurred top bar ([#25](https://github.com/aimuzov-projects/wodlog/issues/25)) ([dfe8a96](https://github.com/aimuzov-projects/wodlog/commit/dfe8a96c4f4932a8fcd46ef6baf0f8f19a61fa66))
+
+
+### Bug Fixes
+
+* drop the day swipe on the home screen ([#26](https://github.com/aimuzov-projects/wodlog/issues/26)) ([9655ab7](https://github.com/aimuzov-projects/wodlog/commit/9655ab7dd3ae44f21a31b9a71eba4b4d20bab035))
+
 ## [1.7.0](https://github.com/aimuzov-projects/wodlog/compare/v1.6.0...v1.7.0) (2026-10-15)
 
 
