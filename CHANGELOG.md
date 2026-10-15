@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/aimuzov-projects/wodlog/compare/v1.1.2...v1.2.0) (2026-10-15)
+
+
+### Features
+
+* fill rx results from the board ([#9](https://github.com/aimuzov-projects/wodlog/issues/9)) ([26dcff4](https://github.com/aimuzov-projects/wodlog/commit/26dcff4fe31742531dab88ff4e1f1c9ee4b4d3bf))
+
 ## [1.1.2](https://github.com/aimuzov-projects/wodlog/compare/v1.1.1...v1.1.2) (2026-10-15)
 
 
