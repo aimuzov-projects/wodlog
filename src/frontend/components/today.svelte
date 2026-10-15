@@ -1,7 +1,10 @@
 <script lang="ts">
 	import Icon from '#frontend/components/icon.svelte'
 	import PartCard from '#frontend/components/part-card.svelte'
+	import { fly } from 'svelte/transition'
+
 	import { humanDate, localDate, shiftDate, shortDate } from '#frontend/lib/format.ts'
+	import { swipe, type SwipeDirection } from '#frontend/lib/swipe.ts'
 	import { haptic } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
 	import { timer } from '#frontend/state/timer.svelte.ts'
@@ -23,10 +26,22 @@
 			.finally(() => (loading = false))
 	})
 
+	// Откуда въезжает новый день: вперёд -- справа, назад -- слева.
+	let direction = $state(0)
+
 	function go(days: number) {
+		if (days > 0 && app.date >= today) return
+
 		haptic('select')
+		direction = days
 		app.date = shiftDate(app.date, days)
 	}
+
+	// Свайп влево -- следующий день, как перелистнуть страницу. В будущее не листаем.
+	const swipeOptions = $derived({
+		onswipe: (d: SwipeDirection) => go(d === 'left' ? 1 : -1),
+		allowed: (d: SwipeDirection) => d === 'right' || app.date < today,
+	})
 
 	const openPart = (part: Part) => app.open({ name: 'part', part, date: app.date })
 
@@ -41,7 +56,7 @@
 	}
 </script>
 
-<section class="today">
+<section class="today" use:swipe={swipeOptions}>
 	<header class="today__header">
 		<label class="today__date">
 			<h1 class="today__title">{humanDate(app.date, today)}</h1>
@@ -63,48 +78,64 @@
 		</button>
 	</header>
 
-	{#if workout === undefined || (loading && !workout)}
-		<div class="card today__skeleton" aria-busy="true"></div>
-	{:else if workout === null}
-		<div class="card today__empty">
-			<p class="today__empty-title">На этот день тренировки ещё нет</p>
-			<p class="muted">Перенесите её с доски: тренировка появится у всех в зале.</p>
-			<button class="btn btn--primary btn--wide" onclick={edit}>
-				<Icon name="plus" /> Добавить тренировку
-			</button>
-		</div>
-	{:else}
-		{#if workout.warmup}
-			<h2 class="section-title">Разминка</h2>
-			<div class="card today__warmup">{workout.warmup}</div>
-		{/if}
-
-		{#each workout.parts as part, i (part.id)}
-			<h2 class="section-title">Комплекс {i + 1}</h2>
-			<PartCard {part} onclick={() => openPart(part)} />
-			<div class="today__actions">
-				{#if part.kind !== 'strength'}
-					<button class="btn btn--primary" onclick={() => app.startTimer(part, app.date)}>
-						<Icon name="play" size={20} />
-						{timerRunning(part) ? 'К таймеру' : 'Старт'}
+	{#key app.date}
+		<div class="today__day" in:fly={{ x: direction * 48, duration: 180 }}>
+			{#if workout === undefined || (loading && !workout)}
+				<div class="card today__skeleton" aria-busy="true"></div>
+			{:else if workout === null}
+				<div class="card today__empty">
+					<p class="today__empty-title">На этот день тренировки ещё нет</p>
+					<p class="muted">Перенесите её с доски: тренировка появится у всех в зале.</p>
+					<button class="btn btn--primary btn--wide" onclick={edit}>
+						<Icon name="plus" /> Добавить тренировку
 					</button>
+				</div>
+			{:else}
+				{#if workout.warmup}
+					<h2 class="section-title">Разминка</h2>
+					<div class="card today__warmup">{workout.warmup}</div>
 				{/if}
-				<button class="btn" onclick={() => openPart(part)}>Результат</button>
-			</div>
-		{/each}
 
-		<div class="today__tools">
-			<button class="btn btn--small" onclick={edit}><Icon name="edit" size={18} /> Править</button>
+				{#each workout.parts as part, i (part.id)}
+					<h2 class="section-title">Комплекс {i + 1}</h2>
+					<PartCard {part} onclick={() => openPart(part)} />
+					<div class="today__actions">
+						{#if part.kind !== 'strength'}
+							<button class="btn btn--primary" onclick={() => app.startTimer(part, app.date)}>
+								<Icon name="play" size={20} />
+								{timerRunning(part) ? 'К таймеру' : 'Старт'}
+							</button>
+						{/if}
+						<button class="btn" onclick={() => openPart(part)}>Результат</button>
+					</div>
+				{/each}
+
+				<div class="today__tools">
+					<button class="btn btn--small" onclick={edit}><Icon name="edit" size={18} /> Править</button>
+				</div>
+
+				{#if workout.updatedBy}
+					<p class="today__author muted">Внёс {workout.updatedBy.name}</p>
+				{/if}
+			{/if}
 		</div>
-
-		{#if workout.updatedBy}
-			<p class="today__author muted">Внёс {workout.updatedBy.name}</p>
-		{/if}
-	{/if}
+	{/key}
 </section>
 
 <style>
 	.today {
+		/* Высота экрана целиком: свайп ловится и по пустому месту под тренировкой. */
+		min-height: calc(100dvh - var(--safe-top) - var(--fab-size) - var(--safe-bottom) - 52px);
+
+		&__day {
+			transform: translateX(var(--swipe-dx, 0));
+			transition: transform 0.2s ease;
+		}
+
+		&:global([data-swiping]) &__day {
+			transition: none;
+		}
+
 		&__header {
 			display: flex;
 			gap: 8px;
