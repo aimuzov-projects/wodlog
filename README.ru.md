@@ -47,7 +47,7 @@
 Всё лежит в `src/`:
 
 - [`src/frontend`](src/frontend): Astro, это `srcDir` в `astro.config.mjs`. Приложение — один Svelte-остров на главной ([`components/app.svelte`](src/frontend/components/app.svelte)), экраны переключаются без роутера ([`state/app.svelte.ts`](src/frontend/state/app.svelte.ts)). Обвязка Telegram (fullscreen, safe area, тема, «Назад», вибрация) — в [`lib/telegram.ts`](src/frontend/lib/telegram.ts).
-- [`src/backend`](src/backend): API на `node:http` и `node:sqlite`, Node запускает TypeScript сам, без сборки и зависимостей. Вход — подписанный initData Mini App или Telegram Login Widget в браузере, дальше сессионный токен. Бот только отвечает на `/start` кнопкой Mini App прямо в ответе на webhook.
+- [`src/backend`](src/backend): API на `node:http` и `node:sqlite`, Node запускает TypeScript сам, без сборки и зависимостей. Вход — подписанный initData Mini App или Telegram Login Widget в браузере, дальше сессионный токен. Бот живёт в том же процессе: забирает апдейты long polling и отвечает на `/start` кнопкой Mini App.
 - [`src/shared`](src/shared): типы, нормализация тренировки и результата, подсчёт рейтинга и логика таймера. Нужны обеим сторонам, все с тестами.
 
 Всё про сервер — в [`deploy`](deploy): Dockerfile фронта и API, compose, nginx.
@@ -104,13 +104,8 @@ Safari на iPhone сам приближает страницу, когда вс
 
 - `/newapp` или Bot Settings → Configure Mini App: Main Mini App с адресом `https://wodlog.aimuzov.online`. Тогда работают ссылки `t.me/wodlogrobot?startapp=…`.
 - `/setdomain` → `wodlog.aimuzov.online`: без этого Login Widget в браузере пишет «Bot domain invalid».
-- Webhook для `/start`, с `WEBHOOK_SECRET` из `.env`:
 
-```sh
-curl "https://api.telegram.org/bot$BOT_TOKEN/setWebhook" \
-  -d url=https://wodlog.aimuzov.online/api/telegram/webhook \
-  -d secret_token=$WEBHOOK_SECRET -d allowed_updates='["message"]'
-```
+Остальное API делает само при старте: снимает webhook, ставит кнопку меню с Mini App и забирает апдейты long polling. Webhook здесь не работает: соединения от серверов Telegram до сервера в России не доходят, а исходящие идут через `vpn:3128`. Локально бот выключается через `BOT_POLLING=0`, иначе dev отбирает апдейты у прода.
 
 Job выкладки запускается, только когда переменная репозитория `DEPLOY_ENABLED` равна `true`, так что пока сервер не готов, релиз гоняет одни проверки.
 

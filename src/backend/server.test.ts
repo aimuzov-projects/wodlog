@@ -41,7 +41,6 @@ before(async () => {
 		db,
 		{
 			botToken: TOKEN,
-			webhookSecret: 's3cret',
 			appUrl: 'https://app.test',
 			dataDir,
 			timeZone: 'UTC',
@@ -207,21 +206,6 @@ test('full flow: gym, workout of the day, results, rating, privacy', async () =>
 	)
 
 	assert.equal((await call<unknown[]>('GET', '/api/me/history', undefined, bob))[1].length, 1)
-})
-
-test('webhook answers /start with a Mini App button only with the secret', async () => {
-	const update = { message: { chat: { id: 5, type: 'private' }, text: '/start gym_abc' } }
-
-	assert.equal((await call('POST', '/api/telegram/webhook', update))[0], 401)
-
-	const [status, reply] = await call<{
-		method: string
-		reply_markup: { inline_keyboard: { web_app: { url: string } }[][] }
-	}>('POST', '/api/telegram/webhook', update, undefined, { 'x-telegram-bot-api-secret-token': 's3cret' })
-
-	assert.equal(status, 200)
-	assert.equal(reply.method, 'sendMessage')
-	assert.equal(reply.reply_markup.inline_keyboard[0][0].web_app.url, 'https://app.test/?invite=abc')
 })
 
 test('period start: week from Monday, month from the 1st', () => {

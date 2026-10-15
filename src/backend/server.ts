@@ -13,7 +13,7 @@ import { join } from 'node:path'
 import { verifyInitData, verifyLoginWidget } from '#backend/auth.ts'
 import { Db, type TelegramUser } from '#backend/db.ts'
 import { DEFAULT_MODEL, openRouterRecognizer, RecognizeError, type Recognizer } from '#backend/recognize.ts'
-import { replyTo } from '#backend/telegram.ts'
+import { botApi, runBot } from '#backend/telegram.ts'
 import type { RatingPeriod, Visibility } from '#shared/types.ts'
 import { InvalidInput, resultInput, text, workoutDraft } from '#shared/workout.ts'
 
@@ -24,7 +24,6 @@ const RECOGNIZE_PER_DAY = 30
 
 export type Settings = {
 	botToken: string
-	webhookSecret: string
 	appUrl: string
 	dataDir: string
 	/** Часовой пояс залов: по нему считается «сегодня» в рейтинге. */
@@ -362,20 +361,6 @@ export function createApp(db: Db, settings: Settings, recognize: Recognizer | nu
 				return [200, db.leaderboard(partId, info.kind, user())]
 			},
 		],
-
-		[
-			'POST',
-			/^\/api\/telegram\/webhook$/,
-			async ({ request, body }) => {
-				if (
-					!settings.webhookSecret ||
-					request.headers['x-telegram-bot-api-secret-token'] !== settings.webhookSecret
-				)
-					throw new HttpError(401, 'Чужой webhook')
-
-				return [200, replyTo(await body(), settings.appUrl) ?? {}]
-			},
-		],
 	]
 
 	return async function handle(request: IncomingMessage, response: ServerResponse) {
@@ -443,7 +428,6 @@ if (import.meta.main) {
 
 	const settings: Settings = {
 		botToken: env.BOT_TOKEN,
-		webhookSecret: env.WEBHOOK_SECRET ?? '',
 		appUrl,
 		dataDir,
 		timeZone: env.APP_TIMEZONE || 'Europe/Moscow',
@@ -456,4 +440,7 @@ if (import.meta.main) {
 	const port = Number(env.PORT || 8787)
 
 	createServer(createApp(db, settings, recognize)).listen(port, () => console.log(`api: http://localhost:${port}`))
+
+	// Локально бот обычно не нужен: два процесса с одним токеном отбирали бы друг у друга апдейты.
+	if (env.BOT_POLLING !== '0') void runBot(botApi(env.BOT_TOKEN), appUrl)
 }
