@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/aimuzov-projects/wodlog/compare/v1.3.0...v1.4.0) (2026-10-15)
+
+
+### Features
+
+* remove the injuries section ([#16](https://github.com/aimuzov-projects/wodlog/issues/16)) ([39fa35c](https://github.com/aimuzov-projects/wodlog/commit/39fa35c3af529a1715696a7be7390fe665bcddc5))
+* skip the timer prep countdown ([#15](https://github.com/aimuzov-projects/wodlog/issues/15)) ([1fb64c1](https://github.com/aimuzov-projects/wodlog/commit/1fb64c1ae228f44584838e60d99ed99c2e15951f))
+
 ## [1.3.0](https://github.com/aimuzov-projects/wodlog/compare/v1.2.0...v1.3.0) (2026-10-15)
 
 
