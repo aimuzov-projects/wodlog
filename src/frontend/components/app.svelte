@@ -7,16 +7,16 @@
 	import PartScreen from '#frontend/components/part-screen.svelte'
 	import Profile from '#frontend/components/profile.svelte'
 	import Rating from '#frontend/components/rating.svelte'
-	import TabBar from '#frontend/components/tab-bar.svelte'
+	import Icon from '#frontend/components/icon.svelte'
+	import MenuFab from '#frontend/components/menu-fab.svelte'
 	import TimerBar from '#frontend/components/timer-bar.svelte'
 	import TimerRun from '#frontend/components/timer-run.svelte'
 	import TimerSetup from '#frontend/components/timer-setup.svelte'
 	import Today from '#frontend/components/today.svelte'
 	import WorkoutEditor from '#frontend/components/workout-editor.svelte'
 	import { registerServiceWorker } from '#frontend/lib/pwa.ts'
-	import { initTelegram } from '#frontend/lib/telegram.ts'
+	import { initTelegram, insideTelegram } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
-	import { timer } from '#frontend/state/timer.svelte.ts'
 
 	let { botUsername }: { botUsername: string } = $props()
 
@@ -50,7 +50,14 @@
 		</main>
 		<TimerBar />
 	{:else}
-		<main class="shell__main" class:shell__main--timer={timer.session}>
+		<main class="shell__main">
+			<!-- В Telegram «Назад» системная, в браузере своя. -->
+			{#if app.screen && !insideTelegram()}
+				<button class="btn btn--small btn--ghost shell__back" onclick={() => app.back()}>
+					<Icon name="left" size={18} /> Назад
+				</button>
+			{/if}
+
 			{#if app.screen?.name === 'editor'}
 				<WorkoutEditor date={app.screen.date} draft={app.screen.draft} />
 			{:else if app.screen?.name === 'part'}
@@ -60,20 +67,21 @@
 				{/key}
 			{:else if app.screen?.name === 'gyms'}
 				<Gyms />
-			{:else if app.tab === 'timer'}
+			{:else if app.screen?.name === 'timer-setup'}
 				<TimerSetup />
-			{:else if app.tab === 'profile'}
+			{:else if app.screen?.name === 'profile'}
 				<Profile />
 			{:else if !app.gym}
 				<GymSetup />
-			{:else if app.tab === 'rating'}
+			{:else if app.screen?.name === 'rating'}
 				<Rating />
 			{:else}
 				<Today />
 			{/if}
 		</main>
 		<TimerBar />
-		<TabBar />
+		<!-- В редакторе внизу свои кнопки «Отмена» и «Сохранить». -->
+		{#if app.screen?.name !== 'editor'}<MenuFab />{/if}
 	{/if}
 
 	{#if app.toast}
@@ -85,17 +93,17 @@
 	.shell {
 		min-height: 100dvh;
 
+		/* Снизу место под кнопку меню и плашку таймера, они висят поверх в одном ряду. */
 		&__main {
-			padding: calc(var(--safe-top) + 12px) var(--gutter) calc(var(--tabbar-height) + var(--safe-bottom) + 24px);
+			padding: calc(var(--safe-top) + 12px) var(--gutter) calc(var(--fab-size) + var(--safe-bottom) + 40px);
 		}
 
 		&__main--bare {
 			padding-bottom: calc(var(--safe-bottom) + 24px);
 		}
 
-		/* Под плашку свёрнутого таймера, чтобы она не закрывала низ страницы. */
-		&__main--timer {
-			padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 88px);
+		&__back {
+			margin: -4px 0 8px -12px;
 		}
 
 		&__center {
@@ -119,7 +127,7 @@
 			position: fixed;
 			z-index: 20;
 			right: var(--gutter);
-			bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 12px);
+			bottom: calc(var(--safe-bottom) + 16px + var(--fab-size) + 12px);
 			left: var(--gutter);
 			padding: 12px 16px;
 			border-radius: var(--radius);
