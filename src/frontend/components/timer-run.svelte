@@ -91,7 +91,9 @@
 				<Icon name={timer.running ? 'pause' : 'play'} size={32} />
 				{timer.running ? 'Пауза' : timer.finished ? 'Заново' : timer.elapsedMs ? 'Дальше' : 'Старт'}
 			</button>
-			{#if session.config.mode === 'for_time'}
+			{#if view.phase === 'prep'}
+				<button class="btn timer-run__button" onclick={() => timer.skipPrep()}>Пропустить</button>
+			{:else if session.config.mode === 'for_time'}
 				<button
 					class="btn timer-run__button"
 					aria-label="Финиш"

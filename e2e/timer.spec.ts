@@ -50,3 +50,27 @@ test('Tabata timer runs through prep, work and rest', async ({ page }) => {
 	await page.getByRole('button', { name: 'Завершить' }).click()
 	await expect(bar).toHaveCount(0)
 })
+
+test('the prep countdown can be skipped before and after start', async ({ page }) => {
+	await page.clock.install()
+	await page.goto('/')
+	await page.getByRole('button', { name: 'Просто открыть таймер' }).click()
+	await page.getByRole('button', { name: 'AMRAP' }).click()
+	await page.getByRole('button', { name: 'Старт' }).click()
+
+	const phase = page.locator('.timer-run__phase')
+
+	// До старта: «Пропустить» сразу запускает работу.
+	await page.getByRole('button', { name: 'Пропустить' }).click()
+	await expect(phase).toHaveText('Работа')
+	await expect(page.getByRole('button', { name: 'Пауза' })).toBeVisible()
+
+	// Во время отсчёта: работа начинается сразу, время не теряется.
+	await page.getByRole('button', { name: 'Сбросить' }).click()
+	await page.getByRole('button', { name: 'Старт' }).click()
+	await page.clock.runFor(3_000)
+	await expect(phase).toHaveText('Приготовиться')
+	await page.getByRole('button', { name: 'Пропустить' }).click()
+	await expect(phase).toHaveText('Работа')
+	await expect(page.getByRole('button', { name: 'Пропустить' })).toHaveCount(0)
+})
