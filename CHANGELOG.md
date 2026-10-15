@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0](https://github.com/aimuzov-projects/wodlog/compare/v1.4.0...v1.5.0) (2026-10-15)
+
+
+### Features
+
+* remove board photo recognition ([#18](https://github.com/aimuzov-projects/wodlog/issues/18)) ([5bb21d7](https://github.com/aimuzov-projects/wodlog/commit/5bb21d7be62b9f248bded169a12dc8758cf06a93))
+* simple home screen with a menu button ([#19](https://github.com/aimuzov-projects/wodlog/issues/19)) ([f2137cc](https://github.com/aimuzov-projects/wodlog/commit/f2137cccd909ebfe42e91417bd248ca880be4def))
+
 ## [1.4.0](https://github.com/aimuzov-projects/wodlog/compare/v1.3.0...v1.4.0) (2026-10-15)
 
 
