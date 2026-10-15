@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/aimuzov-projects/wodlog/compare/v1.1.1...v1.1.2) (2026-10-15)
+
+
+### Bug Fixes
+
+* fetch bot updates with long polling through the vpn ([#6](https://github.com/aimuzov-projects/wodlog/issues/6)) ([b3506fd](https://github.com/aimuzov-projects/wodlog/commit/b3506fd45cbffb1be5ea184d19fb441fcb4bb048))
+
 ## [1.1.1](https://github.com/aimuzov-projects/wodlog/compare/v1.1.0...v1.1.1) (2026-10-15)
 
 
