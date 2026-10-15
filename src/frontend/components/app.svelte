@@ -52,7 +52,7 @@
 	{:else}
 		<main class="shell__main" class:shell__main--timer={timer.session}>
 			{#if app.screen?.name === 'editor'}
-				<WorkoutEditor date={app.screen.date} draft={app.screen.draft} photo={app.screen.photo} />
+				<WorkoutEditor date={app.screen.date} draft={app.screen.draft} />
 			{:else if app.screen?.name === 'part'}
 				<!-- key: после таймера тот же комплекс открывается заново, уже с заполненной формой. -->
 				{#key app.screen}

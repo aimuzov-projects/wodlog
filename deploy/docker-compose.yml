@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
     env_file: ../.env
     environment:
-      # OpenRouter с сервера доступен только через VPN, см. «VPN egress» в infra-server.
+      # Telegram с сервера доступен только через VPN (бот и аватарки), см. «VPN egress» в infra-server.
       HTTPS_PROXY: http://vpn:3128
       NODE_USE_ENV_PROXY: '1'
     volumes:

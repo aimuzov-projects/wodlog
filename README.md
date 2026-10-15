@@ -35,7 +35,7 @@ The app is in Russian, so the names below are translated.
 
 ## What's inside
 
-- **Workout of the day.** One per gym and date. Someone takes a photo of the board, OpenRouter reads the warm-up and the parts (AMRAP, EMOM, For Time, strength), a person fixes the draft, and the whole gym gets the workout. Any member can edit it.
+- **Workout of the day.** One per gym and date. Someone copies the warm-up and the parts (AMRAP, EMOM, For Time, strength) from the board, and the whole gym gets the workout. Any member can edit it.
 - **Results.** Each part has its own result: RX or Scaled, rounds and reps, time or cap, working weight, plus the weight and equipment per movement.
 - **Leaderboards.** One per part and a gym table for the week, month and all time: a point for taking part plus 10, 8, 6, 5, 4, 3, 2, 1 for places. Scoring rules are in [`src/shared/scoring.ts`](src/shared/scoring.ts).
 - **Public and private profiles.** A private one keeps stats for its owner only and stays out of the tables.
@@ -66,8 +66,6 @@ npm run api            # API on :8787
 npm run dev            # front end, /api is proxied to the API
 ```
 
-Without `OPENROUTER_API_KEY` recognition answers 503 and the workout is typed in by hand.
-
 Before committing, the same checks as in CI:
 
 ```sh
@@ -97,7 +95,7 @@ The build puts a CSP with hashes of Astro's scripts and styles into every page (
 
 ## Deployment
 
-The projects server from [infra-server](https://github.com/aimuzov-projects/infra-server): merging the release PR that release-please keeps open runs `deploy.yml`, which runs the checks and logs in over SSH. The steps of both come from [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit), which also holds the server address and its `known_hosts` line. There the key runs the shared [`deploy/site.sh`](https://github.com/aimuzov-projects/infra-server/blob/main/deploy/site.sh) of infra-server, which pulls `main` and rebuilds the `wodlog` (nginx with the static site) and `wodlog-api` containers from [`deploy/docker-compose.yml`](deploy/docker-compose.yml). The domain and TLS are handled by the shared Caddy, which sends `/api/*` to `wodlog-api`. The database and board photos live in the `wodlog-data` volume. The API reaches OpenRouter through `vpn:3128` of infra-server. `.env` lives on the server in `/srv/wodlog`, the template is [`.env.example`](.env.example).
+The projects server from [infra-server](https://github.com/aimuzov-projects/infra-server): merging the release PR that release-please keeps open runs `deploy.yml`, which runs the checks and logs in over SSH. The steps of both come from [infra-site-kit](https://github.com/aimuzov-projects/infra-site-kit), which also holds the server address and its `known_hosts` line. There the key runs the shared [`deploy/site.sh`](https://github.com/aimuzov-projects/infra-server/blob/main/deploy/site.sh) of infra-server, which pulls `main` and rebuilds the `wodlog` (nginx with the static site) and `wodlog-api` containers from [`deploy/docker-compose.yml`](deploy/docker-compose.yml). The domain and TLS are handled by the shared Caddy, which sends `/api/*` to `wodlog-api`. The database and the avatar cache live in the `wodlog-data` volume. The API reaches Telegram through `vpn:3128` of infra-server. `.env` lives on the server in `/srv/wodlog`, the template is [`.env.example`](.env.example).
 
 ### Bot
 

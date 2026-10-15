@@ -1,7 +1,7 @@
 /**
  * Приведение тренировки и результата к строгой форме.
  *
- * Сюда приходит и ответ модели, и тело запроса от клиента, поэтому ничему на входе не верим:
+ * Сюда приходит тело запроса от клиента, поэтому ничему на входе не верим:
  * лишнее отбрасываем, числа разбираем из строк, неизвестный формат комплекса становится `other`.
  */
 
@@ -49,7 +49,7 @@ const integer = (value: unknown) => {
 	return parsed === null ? null : Math.round(parsed)
 }
 
-/** Модель пишет формат как ей вздумается: «For time», «AMRAP 12», «E2MOM». */
+/** Формат текстом как угодно: «For time», «AMRAP 12», «E2MOM». */
 export function partKind(value: unknown): PartKind {
 	const raw = text(value, 40)
 		.toLowerCase()
@@ -119,26 +119,6 @@ export function workoutDraft(raw: unknown): WorkoutDraft {
 			.slice(0, MAX_PARTS)
 			.map(part)
 			.filter((p) => p !== null),
-	}
-}
-
-/**
- * Достаёт JSON из ответа модели.
- *
- * Даже со схемой ответа модели иногда заворачивают его в ```json или пишут пару слов до и после.
- */
-export function parseModelJson(content: string): unknown {
-	const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-	const body = fenced ? fenced[1] : content
-	const start = body.indexOf('{')
-	const end = body.lastIndexOf('}')
-
-	if (start === -1 || end <= start) throw new InvalidInput('Модель не вернула JSON')
-
-	try {
-		return JSON.parse(body.slice(start, end + 1))
-	} catch {
-		throw new InvalidInput('Модель вернула битый JSON')
 	}
 }
 

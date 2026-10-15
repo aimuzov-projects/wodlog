@@ -1,15 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import {
-	InvalidInput,
-	parseModelJson,
-	partKind,
-	resultInput,
-	rxWeight,
-	withRxLoad,
-	workoutDraft,
-} from '#shared/workout.ts'
+import { partKind, resultInput, rxWeight, withRxLoad, workoutDraft } from '#shared/workout.ts'
 
 test('normalizes free-form part kinds', () => {
 	assert.equal(partKind('AMRAP 12'), 'amrap')
@@ -20,7 +12,7 @@ test('normalizes free-form part kinds', () => {
 	assert.equal(partKind('skill'), 'other')
 })
 
-test('cleans up a recognized workout', () => {
+test('cleans up a workout from the editor', () => {
 	const draft = workoutDraft({
 		warmup: '  3 rounds: 200m run, 10 air squats ',
 		parts: [
@@ -52,12 +44,6 @@ test('cleans up a recognized workout', () => {
 test('garbage becomes an empty workout', () => {
 	assert.deepEqual(workoutDraft('nope'), { warmup: '', parts: [] })
 	assert.deepEqual(workoutDraft({ parts: 'x' }), { warmup: '', parts: [] })
-})
-
-test('extracts JSON from a fenced model reply', () => {
-	assert.deepEqual(parseModelJson('Here you go:\n```json\n{"warmup":"run"}\n```'), { warmup: 'run' })
-	assert.throws(() => parseModelJson('no json here'), InvalidInput)
-	assert.throws(() => parseModelJson('{"broken": }'), InvalidInput)
 })
 
 test('requires the ranking value for each part kind', () => {

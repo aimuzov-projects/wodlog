@@ -47,7 +47,6 @@ export type Workout = WorkoutDraft & {
 	gymId: number
 	/** YYYY-MM-DD. */
 	date: string
-	hasPhoto: boolean
 	updatedBy: UserBrief | null
 	updatedAt: number
 }

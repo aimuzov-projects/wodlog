@@ -67,8 +67,6 @@ CREATE TABLE IF NOT EXISTS workouts (
 	gym_id INTEGER NOT NULL REFERENCES gyms(id) ON DELETE CASCADE,
 	date TEXT NOT NULL,
 	warmup TEXT NOT NULL DEFAULT '',
-	has_photo INTEGER NOT NULL DEFAULT 0,
-	recognized TEXT,
 	created_by INTEGER NOT NULL REFERENCES users(id),
 	updated_by INTEGER NOT NULL REFERENCES users(id),
 	created_at INTEGER NOT NULL,
@@ -391,7 +389,6 @@ export class Db {
 			gymId,
 			date,
 			warmup: String(row.warmup),
-			hasPhoto: Boolean(row.has_photo),
 			updatedBy: brief(row, 'u_'),
 			updatedAt: Number(row.updated_at),
 			parts: this.sql
@@ -421,13 +418,7 @@ export class Db {
 	 * Комплексы с `id` обновляются на месте, чтобы не потерять результаты по ним. Новые
 	 * добавляются, а пропавшие из списка удаляются вместе с результатами.
 	 */
-	saveWorkout(
-		gymId: number,
-		date: string,
-		userId: number,
-		draft: WorkoutDraft,
-		extra: { hasPhoto?: boolean; recognized?: unknown } = {},
-	): Workout {
+	saveWorkout(gymId: number, date: string, userId: number, draft: WorkoutDraft): Workout {
 		return this.#tx(() => {
 			const t = now()
 
@@ -441,13 +432,6 @@ export class Db {
 				.run(gymId, date, draft.warmup, userId, userId, t, t)
 
 			const workoutId = this.workoutId(gymId, date)!
-
-			if (extra.hasPhoto) this.sql.prepare('UPDATE workouts SET has_photo = 1 WHERE id = ?').run(workoutId)
-
-			if (extra.recognized !== undefined)
-				this.sql
-					.prepare('UPDATE workouts SET recognized = ? WHERE id = ?')
-					.run(JSON.stringify(extra.recognized), workoutId)
 
 			const existing = new Set(
 				this.sql
@@ -492,13 +476,6 @@ export class Db {
 
 			return this.workout(gymId, date)!
 		})
-	}
-
-	/** Отмечает у сохранённой тренировки фото доски и сырой ответ модели. Новую не создаёт. */
-	markPhoto(gymId: number, date: string, recognized: unknown) {
-		this.sql
-			.prepare('UPDATE workouts SET has_photo = 1, recognized = ? WHERE gym_id = ? AND date = ?')
-			.run(JSON.stringify(recognized), gymId, date)
 	}
 
 	/** Зал и комплекс: по ним проверяется доступ, валидируется результат и подставляются RX-веса. */

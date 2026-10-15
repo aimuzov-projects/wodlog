@@ -70,10 +70,3 @@ export async function api<T>(method: string, path: string, body?: unknown): Prom
 
 	return data as T
 }
-
-/** Картинка по API в виде object URL: `<img>` сам не умеет слать заголовок с токеном. */
-export async function apiImage(path: string): Promise<string | null> {
-	const response = await raw('GET', path)
-
-	return response.ok ? URL.createObjectURL(await response.blob()) : null
-}
