@@ -39,7 +39,7 @@ export function duration(sec: number | null) {
 	return sec % 60 === 0 ? `${sec / 60} мин` : formatClock(sec * 1000)
 }
 
-/** Параметры комплекса одной строкой: «12 мин», «каждые 1:30 × 8», «кап 15 мин». */
+/** Параметры комплекса одной строкой: «12 мин», «каждые 1:30 × 8», «лимит 15 мин». */
 export function partMeta(part: Part) {
 	if (part.kind === 'amrap') return duration(part.timeCapSec)
 
@@ -48,12 +48,12 @@ export function partMeta(part: Part) {
 			.filter(Boolean)
 			.join(' ')
 
-	if (part.kind === 'for_time') return part.timeCapSec ? `кап ${duration(part.timeCapSec)}` : ''
+	if (part.kind === 'for_time') return part.timeCapSec ? `лимит ${duration(part.timeCapSec)}` : ''
 
 	return part.rounds ? `${part.rounds} подх.` : ''
 }
 
-/** Результат одной строкой для таблиц: «6 + 12», «08:42», «кап: 5 + 3», «100 кг». */
+/** Результат одной строкой для таблиц: «6 + 12», «08:42», «лимит: 5 + 3», «100 кг». */
 export function resultLine(kind: PartKind, r: Pick<ResultInput, 'rounds' | 'reps' | 'timeSec' | 'capped' | 'weight'>) {
 	const volume =
 		r.rounds !== null && r.reps
@@ -62,7 +62,7 @@ export function resultLine(kind: PartKind, r: Pick<ResultInput, 'rounds' | 'reps
 				? `${r.rounds} р.`
 				: `${r.reps ?? 0} повт.`
 
-	if (kind === 'for_time') return r.capped ? `кап: ${volume}` : formatClock((r.timeSec ?? 0) * 1000)
+	if (kind === 'for_time') return r.capped ? `лимит: ${volume}` : formatClock((r.timeSec ?? 0) * 1000)
 
 	if (kind === 'strength') return `${r.weight ?? 0} кг`
 

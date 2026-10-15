@@ -160,7 +160,7 @@ export function resultInput(raw: unknown, kind: PartKind): ResultInput {
 	if (kind === 'for_time' && !capped && !result.timeSec) throw new InvalidInput('Укажите время')
 
 	if (kind === 'for_time' && capped && result.rounds === null && result.reps === null)
-		throw new InvalidInput('Укажите, сколько успели до капа')
+		throw new InvalidInput('Укажите, сколько успели за лимит времени')
 
 	if ((kind === 'amrap' || kind === 'emom') && result.rounds === null && result.reps === null)
 		throw new InvalidInput('Укажите раунды или повторы')

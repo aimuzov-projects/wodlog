@@ -28,7 +28,6 @@
 			{:else if session.laps}
 				<span class="timer-bar__rounds">{session.laps} р.</span>
 			{/if}
-			{#if !timer.running}<Icon name="pause" size={16} />{/if}
 		{/if}
 	</button>
 {/if}

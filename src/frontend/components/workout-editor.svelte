@@ -130,7 +130,7 @@
 			{#if part.kind === 'amrap' || part.kind === 'for_time'}
 				<Stepper
 					compact
-					label={part.kind === 'amrap' ? 'Время' : 'Кап'}
+					label={part.kind === 'amrap' ? 'Время' : 'Лимит времени'}
 					value={minutes(part.timeCapSec)}
 					onchange={(v) => (part.timeCapSec = v ? v * 60 : null)}
 					min={part.kind === 'amrap' ? 1 : 0}

@@ -40,7 +40,11 @@
 			disabled={value <= min}
 			onclick={() => change(-step)}>−</button
 		>
-		<span class="stepper__value">{format(value)}<small class="stepper__unit">{unit}</small></span>
+		<!-- Единица под числом, а не сбоку: так само число стоит ровно по центру. -->
+		<span class="stepper__value">
+			{format(value)}
+			{#if unit}<small class="stepper__unit">{unit}</small>{/if}
+		</span>
 		<button type="button" class="btn stepper__step" aria-label={`${label}: больше`} onclick={() => change(step)}
 			>+</button
 		>
@@ -63,15 +67,17 @@
 		}
 
 		&__value {
+			display: grid;
+			justify-items: center;
 			font-family: var(--font-mono);
 			font-size: 2.2rem;
 			font-weight: 800;
-			text-align: center;
+			line-height: 1.1;
 		}
 
 		&__unit {
-			margin-left: 4px;
-			font-size: 1rem;
+			font-family: var(--font-sans);
+			font-size: 0.8rem;
 			font-weight: 600;
 			color: var(--muted);
 		}
