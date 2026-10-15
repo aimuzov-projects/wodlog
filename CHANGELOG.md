@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/aimuzov-projects/wodlog/compare/v1.5.0...v1.6.0) (2026-10-15)
+
+
+### Features
+
+* swipe between days and back ([#21](https://github.com/aimuzov-projects/wodlog/issues/21)) ([2ee28a1](https://github.com/aimuzov-projects/wodlog/commit/2ee28a18d331d469e3d8d8976132b2dac2abf2bb))
+
 ## [1.5.0](https://github.com/aimuzov-projects/wodlog/compare/v1.4.0...v1.5.0) (2026-10-15)
 
 
