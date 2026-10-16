@@ -9,10 +9,11 @@
 
 	type Preset = 'for_time' | 'amrap' | 'emom' | 'intervals'
 
+	// Порядок -- как часто режим нужен в зале.
 	const LABELS: Record<Preset, string> = {
-		for_time: 'For Time',
 		amrap: 'AMRAP',
 		emom: 'EMOM',
+		for_time: 'For Time',
 		intervals: 'Интервалы',
 	}
 	const STORAGE_KEY = 'wodlog.timer'
