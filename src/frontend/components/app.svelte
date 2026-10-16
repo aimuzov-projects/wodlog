@@ -10,7 +10,6 @@
 	import Icon from '#frontend/components/icon.svelte'
 	import MenuFab from '#frontend/components/menu-fab.svelte'
 	import TopBar from '#frontend/components/top-bar.svelte'
-	import TimerBar from '#frontend/components/timer-bar.svelte'
 	import TimerRun from '#frontend/components/timer-run.svelte'
 	import TimerSetup from '#frontend/components/timer-setup.svelte'
 	import Today from '#frontend/components/today.svelte'
@@ -19,6 +18,7 @@
 	import { swipe } from '#frontend/lib/swipe.ts'
 	import { initTelegram, insideTelegram } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
+	import { timer } from '#frontend/state/timer.svelte.ts'
 
 	let { botUsername }: { botUsername: string } = $props()
 
@@ -53,14 +53,13 @@
 	{:else if app.status === 'login'}
 		<Login {botUsername} />
 	{:else if app.status === 'timer'}
-		<main class="shell__main shell__main--bare">
+		<main class="shell__main shell__main--bare" class:shell__main--island={timer.session}>
 			<TimerSetup />
 			<button class="btn btn--ghost btn--wide" onclick={() => app.start()}>Войти</button>
 		</main>
 		<TopBar />
-		<TimerBar />
 	{:else}
-		<main class="shell__main" use:swipe={backSwipe}>
+		<main class="shell__main" class:shell__main--island={timer.session} use:swipe={backSwipe}>
 			<!-- В Telegram «Назад» системная, в браузере своя. -->
 			{#if app.screen && !insideTelegram()}
 				<button class="btn btn--small btn--ghost shell__back" onclick={() => app.back()}>
@@ -90,7 +89,6 @@
 			{/if}
 		</main>
 		<TopBar />
-		<TimerBar />
 		<!-- В редакторе внизу свои кнопки «Отмена» и «Сохранить». -->
 		{#if app.screen?.name !== 'editor'}<MenuFab />{/if}
 	{/if}
@@ -120,6 +118,16 @@
 
 		&__main--bare {
 			padding-bottom: calc(var(--safe-bottom) + 24px);
+		}
+
+		/* Остров таймера вне полноэкранного режима висит сверху поверх контента: отступаем под него.
+		   В полноэкранном он в полосе Telegram, отступ там уже есть. */
+		&__main--island {
+			padding-top: calc(var(--safe-top) + 58px);
+
+			:global(html[data-fullscreen]) & {
+				padding-top: calc(var(--safe-top) + 12px);
+			}
 		}
 
 		&__back {
