@@ -33,6 +33,23 @@
 		return [...best].sort((a, b) => b[1] - a[1]).slice(0, 12)
 	})
 
+	const VISIBILITY = {
+		public: { title: 'Профиль открыт', detail: 'Ваши результаты видны залу и участвуют в рейтинге.' },
+		private: { title: 'Профиль закрыт', detail: 'Результаты видите только вы, в рейтинге вас нет.' },
+	}
+
+	/** Иконка у имени: тап переключает видимость, уведомление объясняет, что это значит. */
+	async function toggleVisibility() {
+		if (!app.me) return
+
+		const visibility = app.me.visibility === 'public' ? 'private' : 'public'
+
+		await updateMe({ visibility })
+
+		if (app.me.visibility === visibility)
+			app.notify(VISIBILITY[visibility].title, false, VISIBILITY[visibility].detail)
+	}
+
 	async function updateMe(patch: Partial<Pick<Me, 'visibility' | 'rxWeights'>>) {
 		haptic('select')
 
@@ -51,29 +68,36 @@
 		<header class="profile__header">
 			<Avatar user={app.me} size={64} />
 			<div>
-				<p class="profile__name">{app.me.name}</p>
+				<p class="profile__name">
+					{app.me.name}
+					<button
+						class="profile__visibility"
+						class:profile__visibility--private={app.me.visibility === 'private'}
+						aria-label={app.me.visibility === 'public'
+							? 'Профиль открыт. Сделать закрытым'
+							: 'Профиль закрыт. Сделать открытым'}
+						onclick={toggleVisibility}
+					>
+						<Icon name={app.me.visibility === 'public' ? 'eye' : 'lock'} size={18} />
+					</button>
+				</p>
 				{#if app.me.username}<p class="muted">@{app.me.username}</p>{/if}
 			</div>
 		</header>
 
-		<h2 class="section-title">Видимость</h2>
-		<div class="card profile__visibility" role="radiogroup" aria-label="Видимость профиля">
-			{#each [['public', 'Открытый', 'Участвую в рейтинге, мои результаты видят в зале'], ['private', 'Закрытый', 'Веду статистику только для себя']] as const as [value, label, hint] (value)}
-				<button
-					class="profile__option"
-					class:profile__option--active={app.me.visibility === value}
-					role="radio"
-					aria-checked={app.me.visibility === value}
-					onclick={() => updateMe({ visibility: value })}
-				>
-					<span class="profile__option-label">
-						{#if value === 'private'}<Icon name="lock" size={16} />{/if}
-						{label}
-					</span>
-					<span class="muted profile__option-hint">{hint}</span>
-				</button>
-			{/each}
-		</div>
+		{@render trainings()}
+
+		{#if records.length}
+			<h2 class="section-title">Личные рекорды</h2>
+			<ul class="card profile__records">
+				{#each records as [movement, kg] (movement)}
+					<li class="profile__record">
+						<span>{movement}</span>
+						<span class="profile__kg">{kg} кг</span>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 
 		<h2 class="section-title">RX-веса</h2>
 		<div class="card profile__rx">
@@ -93,51 +117,35 @@
 			</div>
 		</div>
 
-		<h2 class="section-title">Залы</h2>
-		<button class="card profile__gyms" onclick={() => app.open({ name: 'gyms' })}>
-			<span>{app.gyms.map((g) => g.name).join(', ') || 'Пока ни одного'}</span>
-			<Icon name="chevron" size={20} />
-		</button>
-
-		{#if records.length}
-			<h2 class="section-title">Личные рекорды</h2>
-			<ul class="card profile__records">
-				{#each records as [movement, kg] (movement)}
-					<li class="profile__record">
-						<span>{movement}</span>
-						<span class="profile__kg">{kg} кг</span>
-					</li>
-				{/each}
-			</ul>
-		{/if}
-
-		<h2 class="section-title">История</h2>
-		{#if !history}
-			<div class="card profile__loading" aria-busy="true"></div>
-		{:else if history.length === 0}
-			<p class="muted">Здесь появятся ваши результаты.</p>
-		{:else}
-			<ul class="profile__history">
-				{#each history as row (row.partId)}
-					<li class="card profile__entry">
-						<span class="profile__entry-head">
-							<span class="muted">{shortDate(row.date)} · {row.gymName}</span>
-							<span class="profile__entry-kind">{row.part.title || PART_KIND_LABELS[row.part.kind]}</span>
-						</span>
-						<span class="profile__entry-value">
-							{resultLine(row.part.kind, row)}
-							<span class="muted profile__entry-division">{row.division === 'rx' ? 'RX' : 'SC'}</span>
-						</span>
-					</li>
-				{/each}
-			</ul>
-		{/if}
-
 		{#if !insideTelegram()}
 			<button class="btn btn--ghost btn--danger" onclick={() => app.signOut()}>Выйти</button>
 		{/if}
 	{/if}
 </section>
+
+{#snippet trainings()}
+	<h2 class="section-title">Тренировки</h2>
+	{#if !history}
+		<div class="card profile__loading" aria-busy="true"></div>
+	{:else if history.length === 0}
+		<p class="muted">Здесь появятся ваши результаты.</p>
+	{:else}
+		<ul class="profile__history">
+			{#each history as row (row.partId)}
+				<li class="card profile__entry">
+					<span class="profile__entry-head">
+						<span class="muted">{shortDate(row.date)} · {row.gymName}</span>
+						<span class="profile__entry-kind">{row.part.title || PART_KIND_LABELS[row.part.kind]}</span>
+					</span>
+					<span class="profile__entry-value">
+						{resultLine(row.part.kind, row)}
+						<span class="muted profile__entry-division">{row.division === 'rx' ? 'RX' : 'SC'}</span>
+					</span>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+{/snippet}
 
 <style>
 	.profile {
@@ -151,35 +159,28 @@
 		}
 
 		&__name {
+			display: flex;
+			gap: 8px;
+			align-items: center;
 			font-size: 1.5rem;
 			font-weight: 800;
 		}
 
+		/* Маленькая иконка у имени: открытый профиль -- спокойный цвет, закрытый -- акцентный замок. */
 		&__visibility {
 			display: grid;
-			gap: 8px;
-			padding: 8px;
+			place-items: center;
+			width: 32px;
+			height: 32px;
+			padding: 0;
+			border: 0;
+			border-radius: 50%;
+			color: var(--muted);
+			background: color-mix(in srgb, var(--fg) 8%, transparent);
 		}
 
-		&__option {
-			display: grid;
-			gap: 2px;
-			padding: 12px;
-			border: 2px solid transparent;
-			border-radius: var(--radius-small);
-			text-align: left;
-			background: none;
-		}
-
-		&__option--active {
-			border-color: var(--accent);
-		}
-
-		&__option-label {
-			display: flex;
-			gap: 6px;
-			align-items: center;
-			font-weight: 700;
+		&__visibility--private {
+			color: var(--accent);
 		}
 
 		&__option-hint {
@@ -189,15 +190,6 @@
 		&__rx {
 			display: grid;
 			gap: 10px;
-		}
-
-		&__gyms {
-			display: flex;
-			gap: 8px;
-			justify-content: space-between;
-			width: 100%;
-			border: 0;
-			text-align: left;
 		}
 
 		&__records {

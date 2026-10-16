@@ -42,7 +42,7 @@ class AppState {
 	/** Даты с тренировками в текущем зале. */
 	dates = $state<string[]>([])
 	/** Сообщение внизу экрана: результат сохранён, ошибка сети и т. п. */
-	toast = $state<{ text: string; error: boolean } | null>(null)
+	toast = $state<{ text: string; error: boolean; detail: string } | null>(null)
 
 	gym = $derived(this.gyms.find((g) => g.id === this.gymId) ?? this.gyms[0] ?? null)
 	screen = $derived(this.stack.at(-1) ?? null)
@@ -237,10 +237,11 @@ class AppState {
 		setBackButton(this.stack.length ? () => this.back() : null)
 	}
 
-	notify(text: string, error = false) {
+	/** Сообщение внизу экрана. `detail` -- пояснение мелким текстом, с ним висит подольше: его читают. */
+	notify(text: string, error = false, detail = '') {
 		clearTimeout(this.#toastTimer)
-		this.toast = { text, error }
-		this.#toastTimer = setTimeout(() => (this.toast = null), error ? 5000 : 2500)
+		this.toast = { text, error, detail }
+		this.#toastTimer = setTimeout(() => (this.toast = null), error || detail ? 5000 : 2500)
 	}
 }
 
