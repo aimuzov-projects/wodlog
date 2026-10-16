@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/aimuzov-projects/wodlog/compare/v1.12.0...v1.13.0) (2026-10-16)
+
+
+### Features
+
+* timer grows out of the island ([#38](https://github.com/aimuzov-projects/wodlog/issues/38)) ([d72e972](https://github.com/aimuzov-projects/wodlog/commit/d72e9721dc427757fb6f41b816203e204115a153))
+
 ## [1.12.0](https://github.com/aimuzov-projects/wodlog/compare/v1.11.0...v1.12.0) (2026-10-16)
 
 
