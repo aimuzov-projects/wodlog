@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/aimuzov-projects/wodlog/compare/v1.9.0...v1.10.0) (2026-10-16)
+
+
+### Features
+
+* louder round feedback and swipe out of the timer ([#31](https://github.com/aimuzov-projects/wodlog/issues/31)) ([c80f21e](https://github.com/aimuzov-projects/wodlog/commit/c80f21edc8403ea819bfa5451f093f2869069887))
+
 ## [1.9.0](https://github.com/aimuzov-projects/wodlog/compare/v1.8.0...v1.9.0) (2026-10-15)
 
 
