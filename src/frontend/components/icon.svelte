@@ -17,6 +17,7 @@
 		share: 'M12 3v12 M7 8l5-5 5 5 M5 14v6h14v-6',
 		lock: 'M6 11h12v10H6z M8 11V7a4 4 0 0 1 8 0v4',
 		close: 'M6 6l12 12 M18 6L6 18',
+		check: 'M5 12l5 5 9-10',
 		up: 'M6 15l6-6 6 6',
 		down: 'M6 9l6 6 6-6',
 	}
