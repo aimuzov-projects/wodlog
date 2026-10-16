@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/aimuzov-projects/wodlog/compare/v1.11.0...v1.12.0) (2026-10-16)
+
+
+### Features
+
+* timer island in the top bar ([#36](https://github.com/aimuzov-projects/wodlog/issues/36)) ([0e576d6](https://github.com/aimuzov-projects/wodlog/commit/0e576d6bc3719cc0482a63b1e31d61ac36e68e68))
+
 ## [1.11.0](https://github.com/aimuzov-projects/wodlog/compare/v1.10.0...v1.11.0) (2026-10-16)
 
 
