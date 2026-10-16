@@ -96,7 +96,10 @@
 	{/if}
 
 	{#if app.toast}
-		<div class="shell__toast" class:shell__toast--error={app.toast.error} role="status">{app.toast.text}</div>
+		<div class="shell__toast" class:shell__toast--error={app.toast.error} role="status">
+			{app.toast.text}
+			{#if app.toast.detail}<span class="shell__toast-detail">{app.toast.detail}</span>{/if}
+		</div>
 	{/if}
 </div>
 
@@ -146,12 +149,20 @@
 			right: var(--gutter);
 			bottom: calc(var(--safe-bottom) + 16px + var(--fab-size) + 12px);
 			left: var(--gutter);
+			display: grid;
+			gap: 2px;
 			padding: 12px 16px;
 			border-radius: var(--radius);
-			font-weight: 500;
+			font-weight: 600;
 			color: var(--bg);
 			background: var(--fg);
 			box-shadow: 0 8px 24px rgb(0 0 0 / 20%);
+		}
+
+		&__toast-detail {
+			font-size: 0.85rem;
+			font-weight: 400;
+			opacity: 0.75;
 		}
 
 		&__toast--error {
