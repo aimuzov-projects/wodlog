@@ -15,7 +15,7 @@
 	}
 
 	/** Сколько показывать заголовок раздела, прежде чем на его место вернётся остров таймера. */
-	const TITLE_MS = 2500
+	const TITLE_MS = 1500
 
 	const title = $derived.by(() => {
 		const screen = app.screen
@@ -152,7 +152,6 @@
 			border-radius: 999px;
 			color: #ffffff;
 			background: #000000;
-			box-shadow: 0 4px 16px rgb(0 0 0 / 30%);
 		}
 
 		&__island--prep {
