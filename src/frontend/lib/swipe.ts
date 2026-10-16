@@ -92,7 +92,22 @@ export function swipe(node: HTMLElement, initial: Options) {
 		start = null
 		setDx(0)
 
-		if (direction && (options.allowed?.(direction) ?? true)) options.onswipe(direction)
+		if (!direction || !(options.allowed?.(direction) ?? true)) return
+
+		swallowClick()
+		options.onswipe(direction)
+	}
+
+	// После свайпа браузер может прислать ещё и click по тому, где начался жест: на таймере это
+	// засчитало бы лишний круг. Ближайший клик гасим, но ненадолго, чтобы не съесть настоящий.
+	function swallowClick() {
+		const swallow = (event: Event) => {
+			event.stopPropagation()
+			event.preventDefault()
+		}
+
+		node.addEventListener('click', swallow, { capture: true, once: true })
+		setTimeout(() => node.removeEventListener('click', swallow, { capture: true }), 400)
 	}
 
 	function cancel() {

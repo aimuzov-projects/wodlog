@@ -102,7 +102,8 @@ class TimerSession {
 	lap() {
 		if (!this.session || this.view?.phase !== 'work') return
 
-		haptic('light')
+		haptic('medium')
+		beep('lap')
 		this.session.laps += 1
 		this.#save()
 	}
