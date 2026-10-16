@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.0](https://github.com/aimuzov-projects/wodlog/compare/v1.10.0...v1.11.0) (2026-10-16)
+
+
+### Features
+
+* cleaner gyms screen without the add gym form ([#34](https://github.com/aimuzov-projects/wodlog/issues/34)) ([c058021](https://github.com/aimuzov-projects/wodlog/commit/c058021f59f86688d7c789f59b9465513764195c))
+* profile visibility as an icon next to the name ([#33](https://github.com/aimuzov-projects/wodlog/issues/33)) ([3722037](https://github.com/aimuzov-projects/wodlog/commit/37220374bbd168b19dbadad16358d3635cee8c3e))
+
 ## [1.10.0](https://github.com/aimuzov-projects/wodlog/compare/v1.9.0...v1.10.0) (2026-10-16)
 
 
