@@ -126,6 +126,8 @@
 <style>
 	.timer-run {
 		--phase: var(--accent);
+		/* Где стоит остров в верхней полосе: из него экран и вырастает. */
+		--island-top: calc(var(--safe-top) + 8px);
 
 		position: fixed;
 		inset: 0;
@@ -136,10 +138,20 @@
 		color: #ffffff;
 		background: #0b0b0e;
 		transition: background 0.3s ease;
+		animation: expand 0.42s cubic-bezier(0.32, 0.72, 0, 1);
 
 		/* Шапка уходит в полосу Telegram и из сетки выпадает: строк на одну меньше. */
 		:global(html[data-fullscreen]) & {
+			--island-top: calc(
+				var(--tg-safe-area-inset-top, 0px) + (var(--tg-content-safe-area-inset-top, 0px) - 34px) / 2
+			);
+
 			grid-template-rows: 1fr auto auto;
+		}
+
+		/* Содержимое проявляется, когда чёрное уже почти заполнило экран. */
+		& > * {
+			animation: appear 0.3s ease 0.2s backwards;
 		}
 
 		/* Кнопка «Свернуть» (только в браузере) слева, название режима ровно по центру экрана. */
@@ -283,6 +295,25 @@
 	}
 
 	/* Засчитанный круг: экран вспыхивает цветом фазы, число подпрыгивает. */
+	/* Экран вырастает из острова: капсула 140×34 сверху по центру раскрывается на весь экран. */
+	@keyframes expand {
+		from {
+			clip-path: inset(
+				var(--island-top) calc(50% - 70px) calc(100% - var(--island-top) - 34px) calc(50% - 70px) round 17px
+			);
+		}
+
+		to {
+			clip-path: inset(0 0 0 0 round 0);
+		}
+	}
+
+	@keyframes appear {
+		from {
+			opacity: 0;
+		}
+	}
+
 	@keyframes flash {
 		from {
 			opacity: 0.35;
