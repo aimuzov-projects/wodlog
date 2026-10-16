@@ -3,8 +3,6 @@
 	import { haptic } from '#frontend/lib/telegram.ts'
 	import { app } from '#frontend/state/app.svelte.ts'
 
-	let { compact = false }: { compact?: boolean } = $props()
-
 	let name = $state('')
 	let code = $state('')
 	let busy = $state(false)
@@ -28,12 +26,10 @@
 </script>
 
 <section class="gym-setup">
-	{#if !compact}
-		<ScreenTitle text="Ваш зал" />
-		<p class="muted">
-			Тренировка дня и рейтинг общие для зала. Попросите у знакомых приглашение или заведите зал сами.
-		</p>
-	{/if}
+	<ScreenTitle text="Ваш зал" />
+	<p class="muted">
+		Тренировка дня и рейтинг общие для зала. Попросите у знакомых приглашение или заведите зал сами.
+	</p>
 
 	<form
 		class="card gym-setup__form"
