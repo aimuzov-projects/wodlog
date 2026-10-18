@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.14.0](https://github.com/aimuzov-projects/wodlog/compare/v1.13.0...v1.14.0) (2026-10-18)
+
+
+### Features
+
+* move the 404 to the shared not-found page ([57bda4d](https://github.com/aimuzov-projects/wodlog/commit/57bda4dd629a7d2e25dbeeb27874a79b8a44df14))
+* move the 404 to the shared not-found page ([4dd86c1](https://github.com/aimuzov-projects/wodlog/commit/4dd86c1656f5d1dab42bd5375651c63319509a7e))
+
+
+### Bug Fixes
+
+* **ci:** don't deploy a cancelled run ([#40](https://github.com/aimuzov-projects/wodlog/issues/40)) ([5180f5e](https://github.com/aimuzov-projects/wodlog/commit/5180f5e987af788cf20c6492db06e8ef7a64679c))
+* **ci:** run checks once per PR push ([#42](https://github.com/aimuzov-projects/wodlog/issues/42)) ([678abca](https://github.com/aimuzov-projects/wodlog/commit/678abcac330b437beabe7a9c2edd3e45f5ca42f7))
+
 ## [1.13.0](https://github.com/aimuzov-projects/wodlog/compare/v1.12.0...v1.13.0) (2026-10-16)
 
 
