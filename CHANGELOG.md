@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.1](https://github.com/aimuzov-projects/wodlog/compare/v1.15.0...v1.15.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **deps:** move to infra-site-kit v2 with base.css ([c6c51e3](https://github.com/aimuzov-projects/wodlog/commit/c6c51e39b2e929b5a657600306a3c4b1fb029ae6))
+* **deps:** move to infra-site-kit v2 with base.css ([840188f](https://github.com/aimuzov-projects/wodlog/commit/840188f5049d361c505a21a33eed11c4d79b090a))
+
 ## [1.15.0](https://github.com/aimuzov-projects/wodlog/compare/v1.14.0...v1.15.0) (2026-10-20)
 
 
