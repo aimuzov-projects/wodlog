@@ -76,7 +76,6 @@ body {
 	line-height: 1.4;
 	color: var(--fg);
 	background: var(--bg);
-	-webkit-tap-highlight-color: transparent;
 }
 
 /* Safari на iPhone приближает страницу к полю с текстом мельче 16px, стоит в нём встать. */
