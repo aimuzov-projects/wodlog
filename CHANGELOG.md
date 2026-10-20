@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.0](https://github.com/aimuzov-projects/wodlog/compare/v1.14.0...v1.15.0) (2026-10-20)
+
+
+### Features
+
+* reserve the scrollbar gutter on every page ([3cd67cc](https://github.com/aimuzov-projects/wodlog/commit/3cd67ccb76cd843ff8c0a9a788d9ef646343de07))
+* reserve the scrollbar gutter on every page ([b0cd9ae](https://github.com/aimuzov-projects/wodlog/commit/b0cd9aec1c587ba0a776ca2c33dba9f7771ac1dc))
+
 ## [1.14.0](https://github.com/aimuzov-projects/wodlog/compare/v1.13.0...v1.14.0) (2026-10-18)
 
 
