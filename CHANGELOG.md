@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.2](https://github.com/aimuzov/wodlog/compare/v1.15.1...v1.15.2) (2026-10-24)
+
+
+### Bug Fixes
+
+* **deps:** move to infra-site-kit v3 under the personal aimuzov account ([d64c710](https://github.com/aimuzov/wodlog/commit/d64c7102ae959147310f2f0822c91e1b2f03b3bf))
+* **deps:** move to infra-site-kit v3 under the personal aimuzov account ([6a26f86](https://github.com/aimuzov/wodlog/commit/6a26f86c1b1df5bb60ea81d0187c853c674a6847))
+
 ## [1.15.1](https://github.com/aimuzov-projects/wodlog/compare/v1.15.0...v1.15.1) (2026-10-20)
 
 
