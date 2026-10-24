@@ -4,5 +4,5 @@ export const site = {
 	/** `meta description` и `og:description` по умолчанию. */
 	description: 'WODlog — тренировка дня с доски, личные результаты, рейтинг зала и таймер для кроссфита',
 	/** Репозиторий проекта, на него ведёт ссылка "Исходный код" в подписи автора в подвале. */
-	repo: 'https://github.com/aimuzov-projects/wodlog',
+	repo: 'https://github.com/aimuzov/wodlog',
 }
