@@ -1,4 +1,4 @@
-# WODlog на сервере проектов. Порты 80/443 держит общий Caddy из aimuzov-projects/infra-server:
+# WODlog на сервере проектов. Порты 80/443 держит общий Caddy из aimuzov/infra-server:
 # он проксирует домен сюда по сети `edge`, а /api/* -- сервису API.
 
 name: wodlog
